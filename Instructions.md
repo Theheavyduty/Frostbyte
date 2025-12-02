@@ -16,13 +16,13 @@ Run this command
 ## Todo-list
 
 #### Backend
-- [ ] Implemented user-service
-- [ ] Implemented passkeys
+- [ ] Implemented user-service (Missing departments)
+- [X] Implemented passkeys
 - [ ] Implemented check-service
 - [ ] Implemented Gateway
 - [ ] Added frontend to gateway
 - [ ] Implemented ActivityPlan (extra functionality)
-- [ ] Implemented database for the user-service
+- [X] Implemented database for the user-service
 - [ ] Implemented database for the Check-service
 - [ ] Scaling and loadbalance (extra functionality)
 - [ ] Consul (extra functionality)
@@ -30,4 +30,5 @@ Run this command
 - [ ] Delete user(child)/parent/employee
 - [ ] Edit user(child)/parent/employee
 - [ ] register user(child)/parent/employee
+- [ ] Network for docker
 

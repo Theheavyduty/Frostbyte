@@ -6,8 +6,9 @@
 ```git switch -u <branch-name>```
 
 ## To see all the remote branches
-
 ```git branch -r```
+
+
 
 ## Rules for github
 - No push to main
