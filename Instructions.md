@@ -13,23 +13,6 @@ This is will apply the changes you made in docker
 Run this command
 ````mvn spring-boot:run -Dspring-boot.run.profiles=local````
 
-## Create a test user
-Run this command
-```` 
-    curl -X POST http://localhost:8000/api/employees \
-  -H "Content-Type: application/json" \
-  -d '{
-        "name": "bob",
-        "email": "bob@example.com",
-        "password": "secret123",
-        "phoneNumber": 12345678,
-        "address": "Somewhere",
-        "profilePictureUrl": null
-      }'
-      
-   ````
-
-
 ## Todo-list
 
 #### Backend
@@ -49,5 +32,5 @@ Run this command
 - [ ] register user(child)/parent/employee
 - [ ] Network for docker
 
-
-
+## Todo list frontend
+- [ ] test
