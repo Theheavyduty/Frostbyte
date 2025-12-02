@@ -1,0 +1,14 @@
+
+user-service:
+  base-uri: http://localhost:8080
+spring:
+  config:
+    activate:
+      on-profile: local
+  cloud:
+    gateway:
+      routes:
+        - id: user-service
+          uri: http://user-service:8000
+          predicates:
+            - Path=/api/**,/login,/webauthn/**,/profile-pictures/**, /test.html

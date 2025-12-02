@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User-Service Test Console</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 1.5rem;
+            background: #f8fafc;
+        }
+        h1 {
+            margin-bottom: 0.5rem;
+        }
+        h2 {
+            margin-top: 1.5rem;
+            border-bottom: 1px solid #cbd5f5;
+            padding-bottom: 0.25rem;
+        }
+        fieldset {
+            border: 1px solid #cbd5f5;
+            border-radius: 6px;
+            padding: 0.75rem 1rem 1rem;
+            margin-bottom: 1rem;
+            background: white;
+        }
+        legend {
+            padding: 0 0.4rem;
+            font-weight: 600;
+        }
+        label {
+            display: block;
+            margin: 0.25rem 0;
+        }
+        input[type="text"],
+        input[type="number"],
+        input[type="password"],
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.25rem 0.4rem;
+            border-radius: 4px;
+            border: 1px solid #cbd5f5;
+            margin-top: 0.125rem;
+        }
+        input[type="file"] {
+            margin-top: 0.25rem;
+        }
+        button {
+            margin-top: 0.5rem;
+            padding: 0.35rem 0.8rem;
+            border-radius: 4px;
+            border: 1px solid #4f46e5;
+            background: #4f46e5;
+            color: white;
+            cursor: pointer;
+        }
+        button.secondary {
+            background: #e5e7eb;
+            border-color: #9ca3af;
+            color: #111827;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .col {
+            flex: 1 1 320px;
+        }
+        #result {
+            white-space: pre-wrap;
+            background: #0f172a;
+            color: #e5e7eb;
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+            max-height: 350px;
+            overflow: auto;
+            font-size: 0.9rem;
+        }
+        small {
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+<h1>User-Service Test Console</h1>
+<p>
+    <label>
+        API base URL:
+        <input id="apiBase" type="text" placeholder="e.g. http://localhost:8080 (leave empty for same origin)">
+    </label>
+    <small>All requests go to <code>[API base URL] + path</code>, e.g. <code>http://localhost:8080/api/users/register</code>.</small>
+</p>
+
+<p>
+    <a href="/login" target="_blank">Open Spring Security login page (username/password + passkeys)</a>
+</p>
+
+<hr>
+
+<div class="row">
+    <div class="col">
+        <h2>Children (Users)</h2>
+
+        <fieldset>
+            <legend>Ping</legend>
+            <button type="button" onclick="pingUserService()">GET /api/users/ping</button>
+        </fieldset>
+
+        <fieldset>
+            <legend>Register Child</legend>
+            <form id="childRegisterForm" onsubmit="return registerChild(event)">
+                <label> Name <input name="name" type="text" required></label>
+                <label> Email <input name="email" type="text" required></label>
+                <label> Password <input name="password" type="password" required></label>
+                <label> Phone Number <input name="phoneNumber" type="number" required></label>
+                <label> Address <input name="address" type="text" required></label>
+                <label> Profile Picture URL (optional) <input name="profilePictureUrl" type="text"></label>
+                <button type="submit">POST /api/users/register</button>
+            </form>
+        </fieldset>
+
+        <fieldset>
+            <legend>Update Child</legend>
+            <form id="childUpdateForm" onsubmit="return updateChild(event)">
+                <label> User ID <input name="id" type="number" required></label>
+                <label> Name <input name="name" type="text" required></label>
+                <label> Email <input name="email" type="text" required></label>
+                <label> Phone Number <input name="phoneNumber" type="number" required></label>
+                <label> Address <input name="address" type="text" required></label>
+                <label> Profile Picture URL (optional) <input name="profilePictureUrl" type="text"></label>
+                <button type="submit">PUT /api/users/{id}</button>
+            </form>
+        </fieldset>
+
+        <fieldset>
+            <legend>Upload Child Profile Picture</legend>
+            <form id="childPictureForm" onsubmit="return uploadChildPicture(event)">
+                <label> User ID <input name="id" type="number" required></label>
+                <label> Image File <input name="file" type="file" accept="image/*" required></label>
+                <button type="submit">POST /api/users/{id}/profile-picture</button>
+            </form>
+        </fieldset>
+    </div>
+
+    <div class="col">
+        <h2>Parents</h2>
+
+        <fieldset>
+            <legend>Create Parent</legend>
+            <form id="parentCreateForm" onsubmit="return createParent(event)">
+                <label> Name <input name="name" type="text" required></label>
+                <label> Email <input name="email" type="text" required></label>
+                <label> Password <input name="password" type="password" required></label>
+                <label> Phone Number <input name="phoneNumber" type="number" required></label>
+                <label> Address <input name="address" type="text" required></label>
+                <label> Profile Picture URL (optional) <input name="profilePictureUrl" type="text"></label>
+                <label> Child IDs (comma-separated) <input name="childIds" type="text" placeholder="e.g. 1,2,3"></label>
+                <button type="submit">POST /api/parents</button>
+            </form>
+        </fieldset>
+
+        <fieldset>
+            <legend>Update Parent</legend>
+            <form id="parentUpdateForm" onsubmit="return updateParent(event)">
+                <label> Parent ID <input name="id" type="number" required></label>
+                <label> Name <input name="name" type="text" required></label>
+                <label> Email <input name="email" type="text" required></label>
+                <label> Phone Number <input name="phoneNumber" type="number" required></label>
+                <label> Address <input name="address" type="text" required></label>
+                <label> Profile Picture URL (optional) <input name="profilePictureUrl" type="text"></label>
+                <label> Child IDs (comma-separated) <input name="childIds" type="text" placeholder="e.g. 1,2"></label>
+                <button type="submit">PUT /api/parents/{id}</button>
+            </form>
+        </fieldset>
+
+        <fieldset>
+            <legend>Upload Parent Profile Picture</legend>
+            <form id="parentPictureForm" onsubmit="return uploadParentPicture(event)">
+                <label> Parent ID <input name="id" type="number" required></label>
+                <label> Image File <input name="file" type="file" accept="image/*" required></label>
+                <button type="submit">POST /api/parents/{id}/profile-picture</button>
+            </form>
+        </fieldset>
+    </div>
+
+    <div class="col">
+        <h2>Employees</h2>
+
+        <fieldset>
+            <legend>Create Employee</legend>
+            <form id="employeeCreateForm" onsubmit="return createEmployee(event)">
+                <label> Name <input name="name" type="text" required></label>
+                <label> Email <input name="email" type="text" required></label>
+                <label> Password <input name="password" type="password" required></label>
+                <label> Phone Number <input name="phoneNumber" type="number" required></label>
+                <label> Address <input name="address" type="text" required></label>
+                <label> Profile Picture URL (optional) <input name="profilePictureUrl" type="text"></label>
+                <button type="submit">POST /api/employees</button>
+            </form>
+        </fieldset>
+
+        <fieldset>
+            <legend>Update Employee</legend>
+            <form id="employeeUpdateForm" onsubmit="return updateEmployee(event)">
+                <label> Employee ID <input name="id" type="number" required></label>
+                <label> Name <input name="name" type="text" required></label>
+                <label> Email <input name="email" type="text" required></label>
+                <label> Phone Number <input name="phoneNumber" type="number" required></label>
+                <label> Address <input name="address" type="text" required></label>
+                <label> Profile Picture URL (optional) <input name="profilePictureUrl" type="text"></label>
+                <button type="submit">PUT /api/employees/{id}</button>
+            </form>
+        </fieldset>
+
+        <fieldset>
+            <legend>Upload Employee Profile Picture</legend>
+            <form id="employeePictureForm" onsubmit="return uploadEmployeePicture(event)">
+                <label> Employee ID <input name="id" type="number" required></label>
+                <label> Image File <input name="file" type="file" accept="image/*" required></label>
+                <button type="submit">POST /api/employees/{id}/profile-picture</button>
+            </form>
+        </fieldset>
+
+        <fieldset>
+            <legend>Employee Login (username + password)</legend>
+            <form id="employeeLoginForm" onsubmit="return employeeLogin(event)">
+                <label> Name <input name="name" type="text" required></label>
+                <label> Password <input name="password" type="password" required></label>
+                <button type="submit">POST /api/employees/login</button>
+            </form>
+            <small>For passkeys, use the <code>/login</code> page link above (Spring Security + WebAuthn).</small>
+        </fieldset>
+    </div>
+</div>
+
+<h2>Result</h2>
+<pre id="result">(responses will appear here)</pre>
+
+<script>
+    function api(path) {
+        const base = document.getElementById('apiBase').value.trim();
+        const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
+        return (cleanBase || '') + path;
+    }
+
+    async function showResponse(title, resp) {
+        const text = await resp.text().catch(() => '');
+        const resultEl = document.getElementById('result');
+        resultEl.textContent =
+            title + '\\n' +
+            'Status: ' + resp.status + ' ' + resp.statusText + '\\n' +
+            'URL: ' + resp.url + '\\n\\n' +
+            (text || '<no body>');
+    }
+
+    async function pingUserService() {
+        const resp = await fetch(api('/api/users/ping'));
+        await showResponse('GET /api/users/ping', resp);
+    }
+
+    // --- Children (Users) ---
+
+    async function registerChild(e) {
+        e.preventDefault();
+        const f = e.target;
+        const payload = {
+            name: f.name.value,
+            email: f.email.value,
+            password: f.password.value,
+            phoneNumber: parseInt(f.phoneNumber.value, 10),
+            address: f.address.value,
+            profilePictureUrl: f.profilePictureUrl.value || null
+        };
+
+        const resp = await fetch(api('/api/users/register'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        await showResponse('POST /api/users/register', resp);
+        return false;
+    }
+
+    async function updateChild(e) {
+        e.preventDefault();
+        const f = e.target;
+        const id = parseInt(f.id.value, 10);
+        const payload = {
+            name: f.name.value,
+            email: f.email.value,
+            phoneNumber: parseInt(f.phoneNumber.value, 10),
+            address: f.address.value,
+            profilePictureUrl: f.profilePictureUrl.value || null
+        };
+
+        const resp = await fetch(api('/api/users/' + id), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        await showResponse('PUT /api/users/' + id, resp);
+        return false;
+    }
+
+    async function uploadChildPicture(e) {
+        e.preventDefault();
+        const f = e.target;
+        const id = parseInt(f.id.value, 10);
+        const file = f.file.files[0];
+        const fd = new FormData();
+        fd.append('file', file);
+
+        const resp = await fetch(api('/api/users/' + id + '/profile-picture'), {
+            method: 'POST',
+            body: fd
+        });
+        await showResponse('POST /api/users/' + id + '/profile-picture', resp);
+        return false;
+    }
+
+    // --- Parents ---
+
+    function parseChildIds(str) {
+        return (str || '')
+            .split(',')
+            .map(s => s.trim())
+            .filter(Boolean)
+            .map(v => Number(v));
+    }
+
+    async function createParent(e) {
+        e.preventDefault();
+        const f = e.target;
+        const payload = {
+            name: f.name.value,
+            email: f.email.value,
+            password: f.password.value,
+            phoneNumber: parseInt(f.phoneNumber.value, 10),
+            address: f.address.value,
+            profilePictureUrl: f.profilePictureUrl.value || null,
+            childIds: parseChildIds(f.childIds.value)
+        };
+
+        const resp = await fetch(api('/api/parents'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        await showResponse('POST /api/parents', resp);
+        return false;
+    }
+
+    async function updateParent(e) {
+        e.preventDefault();
+        const f = e.target;
+        const id = parseInt(f.id.value, 10);
+        const payload = {
+            name: f.name.value,
+            email: f.email.value,
+            phoneNumber: parseInt(f.phoneNumber.value, 10),
+            address: f.address.value,
+            profilePictureUrl: f.profilePictureUrl.value || null,
+            childIds: parseChildIds(f.childIds.value)
+        };
+
+        const resp = await fetch(api('/api/parents/' + id), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        await showResponse('PUT /api/parents/' + id, resp);
+        return false;
+    }
+
+    async function uploadParentPicture(e) {
+        e.preventDefault();
+        const f = e.target;
+        const id = parseInt(f.id.value, 10);
+        const file = f.file.files[0];
+        const fd = new FormData();
+        fd.append('file', file);
+
+        const resp = await fetch(api('/api/parents/' + id + '/profile-picture'), {
+            method: 'POST',
+            body: fd
+        });
+        await showResponse('POST /api/parents/' + id + '/profile-picture', resp);
+        return false;
+    }
+
+
+    async function createEmployee(e) {
+        e.preventDefault();
+        const f = e.target;
+        const payload = {
+            name: f.name.value,
+            email: f.email.value,
+            password: f.password.value,
+            phoneNumber: parseInt(f.phoneNumber.value, 10),
+            address: f.address.value,
+            profilePictureUrl: f.profilePictureUrl.value || null
+        };
+
+        const resp = await fetch(api('/api/employees'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        await showResponse('POST /api/employees', resp);
+        return false;
+    }
+
+    async function updateEmployee(e) {
+        e.preventDefault();
+        const f = e.target;
+        const id = parseInt(f.id.value, 10);
+        const payload = {
+            name: f.name.value,
+            email: f.email.value,
+            phoneNumber: parseInt(f.phoneNumber.value, 10),
+            address: f.address.value,
+            profilePictureUrl: f.profilePictureUrl.value || null
+        };
+
+        const resp = await fetch(api('/api/employees/' + id), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        await showResponse('PUT /api/employees/' + id, resp);
+        return false;
+    }
+
+    async function uploadEmployeePicture(e) {
+        e.preventDefault();
+        const f = e.target;
+        const id = parseInt(f.id.value, 10);
+        const file = f.file.files[0];
+        const fd = new FormData();
+        fd.append('file', file);
+
+        const resp = await fetch(api('/api/employees/' + id + '/profile-picture'), {
+            method: 'POST',
+            body: fd
+        });
+        await showResponse('POST /api/employees/' + id + '/profile-picture', resp);
+        return false;
+    }
+
+    async function employeeLogin(e) {
+        e.preventDefault();
+        const f = e.target;
+        const payload = {
+            name: f.name.value,
+            password: f.password.value
+        };
+
+        const resp = await fetch(api('/api/employees/login'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        await showResponse('POST /api/employees/login', resp);
+        return false;
+    }
+</script>
+</body>
+</html>
