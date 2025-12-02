@@ -13,10 +13,35 @@ This is will apply the changes you made in docker
 Run this command
 ````mvn spring-boot:run -Dspring-boot.run.profiles=local````
 
+## How to send REST api request (for frontend people)
+
+There is a test page called [test.html](User-service/src/main/resources/static/test.html) scoll down and you will some react code how to send a request
+
+IMPORTANT: I take no pride in test.html. Chatgpt have created the code(Alex)
+
+Full directory: Frostbyte/User-service/src/main/resources/static/test.html
+
+
+## Create a test user
+Run this command
+```` 
+curl -X POST http://localhost:8000/api/employees \
+  -H "Content-Type: application/json" \
+  -d '{
+        "name": "bob",
+        "email": "bob@example.com",
+        "password": "secret123",
+        "phoneNumber": 12345678,
+        "address": "Somewhere",
+        "profilePictureUrl": null
+      }'
+   ````
+
+
 ## Todo-list
 
 #### Backend
-- [ ] Implemented user-service (Missing departments)
+- [ ] Implemented user-service (including departments)
 - [X] Implemented passkeys
 - [ ] Implemented check-service
 - [ ] Implemented Gateway
@@ -27,11 +52,12 @@ Run this command
 - [ ] Scaling and loadbalance (extra functionality)
 - [ ] Consul (extra functionality)
 - [ ] Docker compose for whole project
-- [ ] Delete user(child)/parent/employee
-- [ ] Edit user(child)/parent/employee
+- [ ] Delete user(child)/parent/employee (extra functionality)
+- [X] Edit user(child)/parent/employee
 - [ ] register user(child)/parent/employee
 - [ ] Network for docker
 - [ ] Add session token (extra functionality)
+- [ ] Healthchecks (extra functionality)
 
 ## Todo list frontend
 - [ ] test
