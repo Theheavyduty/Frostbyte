@@ -31,6 +31,7 @@ Run this command
 - [ ] Edit user(child)/parent/employee
 - [ ] register user(child)/parent/employee
 - [ ] Network for docker
+- [ ] Add session token (extra functionality)
 
 ## Todo list frontend
 - [ ] test
