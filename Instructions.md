@@ -1,7 +1,8 @@
 # Instructions
 
 ## How to start everything on docker
-Run this command (first time) from root directory
+1. First start docker desktop [Download](https://www.docker.com/)
+2. Run this command (first time) from root directory
 ```Docker compose up```
 If you have made some changes in the code run this command
 ```docker compose up --build```
