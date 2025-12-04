@@ -9,26 +9,9 @@ import jakarta.validation.constraints.Positive;
 import java.util.List;
 
 public record CreateParentRequest(
-
-        @NotBlank
-        String name,
-
-        @Email
-        @NotBlank
-        String email,
-
-        @NotBlank
-        String password,
-
-        @NotNull
-        @Positive
-        Integer phoneNumber,
-
-        @NotBlank
-        String address,
-
-        String profilePictureUrl,
-
-        @NotEmpty
+        @NotBlank String name,
+        @Email String email,
+        @NotNull Integer phoneNumber,
+        @NotBlank String address,
         List<Long> childIds
 ) { }

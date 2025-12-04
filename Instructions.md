@@ -21,8 +21,12 @@ IMPORTANT: I take no pride in test.html. Chatgpt have created the code(Alex)
 
 Full directory: Frostbyte/User-service/src/main/resources/static/test.html
 
+## How to install maven
 
-## Create a test user
+Go to this link: https://maven.apache.org/install.html
+
+
+## Create a test user as a employee
 Run this command
 ```` 
 curl -X POST http://localhost:8000/api/employees \
@@ -35,7 +39,7 @@ curl -X POST http://localhost:8000/api/employees \
         "address": "Somewhere",
         "profilePictureUrl": null
       }'
-   ````
+````
 
 
 ## Todo-list
@@ -44,20 +48,20 @@ curl -X POST http://localhost:8000/api/employees \
 - [ ] Implemented user-service (including departments)
 - [X] Implemented passkeys
 - [ ] Implemented check-service
-- [ ] Implemented Gateway
-- [ ] Added frontend to gateway
-- [ ] Implemented ActivityPlan (extra functionality)
+- [ ] Implemented Gateway *(extra functionality)*
+- [ ] Added frontend to gateway *(extra functionality)*
+- [ ] Implemented ActivityPlan *(extra functionality)*
 - [X] Implemented database for the user-service
 - [ ] Implemented database for the Check-service
-- [ ] Scaling and loadbalance (extra functionality)
-- [ ] Consul (extra functionality)
-- [ ] Docker compose for whole project
-- [ ] Delete user(child)/parent/employee (extra functionality)
+- [ ] Scaling and loadbalance *(extra functionality)*
+- [ ] Consul *(extra functionality)*
+- [ ] Docker compose for whole project 
+- [ ] Delete user(child)/parent/employee *(extra functionality)*
 - [X] Edit user(child)/parent/employee
 - [ ] register user(child)/parent/employee
-- [ ] Network for docker
-- [ ] Add session token (extra functionality)
-- [ ] Healthchecks (extra functionality)
+- [ ] Network for docker *(extra functionality)*
+- [ ] Add session token *(extra functionality)*
+- [ ] Healthchecks *(extra functionality)*
 
 ## Todo list frontend
 - [ ] test

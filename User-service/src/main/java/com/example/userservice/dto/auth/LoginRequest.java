@@ -1,8 +1,8 @@
-package com.example.userservice.dto.Employee;
+package com.example.userservice.dto.auth;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record EmployeeLoginRequest(
+public record LoginRequest(
         @NotBlank String name,
         @NotBlank String password
 ) { }

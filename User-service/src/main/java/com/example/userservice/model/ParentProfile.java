@@ -1,5 +1,6 @@
 package com.example.userservice.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,6 +31,7 @@ public class ParentProfile {
     private String email;
 
     @Column(nullable = false)
+    @JsonIgnore
     private String password;
 
     @Column
@@ -47,5 +49,5 @@ public class ParentProfile {
             joinColumns = @JoinColumn(name = "parent_id"),
             inverseJoinColumns = @JoinColumn(name = "child_id")
     )
-    private Set<User> children = new HashSet<>();
+    private Set<Children> children = new HashSet<>();
 }

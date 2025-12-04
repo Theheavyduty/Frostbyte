@@ -13,46 +13,57 @@ import java.util.UUID;
 @Service
 public class FileStorageService {
 
+    // Base: uploads/profile-pictures
     private final Path rootLocation = Paths.get("uploads/profile-pictures");
 
     public FileStorageService() {
         try {
-            Files.createDirectories(rootLocation);
+            Files.createDirectories(rootLocation.resolve("users"));
+            Files.createDirectories(rootLocation.resolve("parents"));
+            Files.createDirectories(rootLocation.resolve("employees"));
         } catch (IOException e) {
-            throw new RuntimeException("Could not create upload directory", e);
+            throw new RuntimeException("Could not create upload directories", e);
         }
     }
 
     public String storeUserProfilePicture(Long userId, MultipartFile file) throws IOException {
-        String extension = getExtension(file.getOriginalFilename());
-        String filename = "user-" + userId + "-" + UUID.randomUUID() + extension;
-
-        Path target = rootLocation.resolve(filename);
-        Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
-
-        return "/profile-pictures/" + filename;
+        return storeProfilePicture("users", "user-" + userId, file);
     }
 
     public String storeParentProfilePicture(Long parentId, MultipartFile file) throws IOException {
-        String extension = getExtension(file.getOriginalFilename());
-        String filename = "parent-" + parentId + "-" + UUID.randomUUID() + extension;
-
-        Path target = rootLocation.resolve(filename);
-        Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
-
-        return "/profile-pictures/" + filename;
+        return storeProfilePicture("parents", "parent-" + parentId, file);
     }
 
     public String storeEmployeeProfilePicture(Long employeeId, MultipartFile file) throws IOException {
-        String extension = getExtension(file.getOriginalFilename());
-        String filename = "employee-" + employeeId + "-" + UUID.randomUUID() + extension;
-
-        Path target = rootLocation.resolve(filename);
-        Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
-
-        return "/profile-pictures/" + filename;
+        return storeProfilePicture("employees", "employee-" + employeeId, file);
     }
 
+    public void deleteProfilePicture(String url) {
+        if (url == null || !url.startsWith("/profile-pictures/")) {
+            return;
+        }
+
+        String relative = url.substring("/profile-pictures/".length()); // e.g. "users/user-1-uuid.png"
+        Path target = rootLocation.resolve(relative).normalize();
+
+        try {
+            Files.deleteIfExists(target);
+        } catch (IOException e) {
+        }
+    }
+
+    private String storeProfilePicture(String subFolder, String prefix, MultipartFile file) throws IOException {
+        String extension = getExtension(file.getOriginalFilename());
+        String filename = prefix + "-" + UUID.randomUUID() + extension;
+
+        Path subDir = rootLocation.resolve(subFolder);
+        Files.createDirectories(subDir);
+
+        Path target = subDir.resolve(filename);
+        Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+
+        return "/profile-pictures/" + subFolder + "/" + filename;
+    }
 
     private String getExtension(String original) {
         if (original == null) return "";

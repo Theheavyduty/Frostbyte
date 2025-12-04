@@ -1,14 +1,14 @@
-package com.example.userservice.dto.Parent;
+package com.example.userservice.dto.Children;
 
 import jakarta.validation.constraints.Email;
-import java.util.List;
 
 
-public record UpdateParentRequest(
+public record UpdateChildrenRequest(
         String name,
         @Email String email,
         Integer phoneNumber,
         String address,
         String profilePictureUrl,
-        List<Long> childIds
+        String departments
 ) { }
+
