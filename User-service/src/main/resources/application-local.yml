@@ -14,13 +14,19 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
+        ddl-auto: create-drop
+
 
   docker:
     compose:
       enabled: false
 
+  config:
+    activate:
+      on-profile: local
+
 server:
-  port: 8000
+  port: 8001
 
 
 app:
@@ -29,3 +35,4 @@ app:
     rp-name: Frostbyte User Service
     allowed-origins:
       - http://localhost:8000
+      - http://localhost:8001
