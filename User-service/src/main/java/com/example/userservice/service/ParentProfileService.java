@@ -1,93 +1,118 @@
 package com.example.userservice.service;
 
-import com.example.userservice.model.ParentProfile;
-import com.example.userservice.model.User;
-import com.example.userservice.repository.ParentProfileRepository;
-import com.example.userservice.repository.UserRepository;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
+import com.example.userservice.dto.Parent.CreateParentRequest;
 import com.example.userservice.dto.Parent.UpdateParentRequest;
+import com.example.userservice.model.Children;
+import com.example.userservice.model.ParentProfile;
+import com.example.userservice.model.Children;
+import com.example.userservice.repository.ChildrenRepository;
+import com.example.userservice.repository.ParentProfileRepository;
+import com.example.userservice.repository.ChildrenRepository;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
-
+import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
+@Transactional
 public class ParentProfileService {
 
-    private final ParentProfileRepository parentRepo;
-    private final UserRepository userRepo;
-    private final PasswordEncoder passwordEncoder;
-
-    public ParentProfileService(ParentProfileRepository parentRepo,
-                                UserRepository userRepo,
-                                PasswordEncoder passwordEncoder) {
-        this.parentRepo = parentRepo;
-        this.userRepo = userRepo;
-        this.passwordEncoder = passwordEncoder;
+    public ParentProfileService(ParentProfileRepository parentProfileRepository, ChildrenRepository childrenRepository, FileStorageService fileStorageService) {
+        this.parentProfileRepository = parentProfileRepository;
+        this.childrenRepository = childrenRepository;
+        this.fileStorageService = fileStorageService;
     }
 
-    public ParentProfile createParentWithChildren(
-            String name,
-            String email,
-            String rawPassword,
-            Integer phoneNumber,
-            String address,
-            String profilePictureUrl,   // NEW
-            List<Long> childIds
-    ) {
-        if (parentRepo.existsByName(name)) {
-            throw new IllegalStateException("Parent name already taken");
-        }
+    private final ParentProfileRepository parentProfileRepository;
+    private final ChildrenRepository childrenRepository;
+    private final FileStorageService fileStorageService;
 
+
+
+    // === BASIC CRUD =========================================================
+
+    public List<ParentProfile> getAll() {
+        return parentProfileRepository.findAll();
+    }
+
+    public ParentProfile getById(Long id) {
+        return parentProfileRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Parent not found: " + id));
+    }
+
+    public ParentProfile create(CreateParentRequest req) {
         ParentProfile parent = new ParentProfile();
-        parent.setName(name);
-        parent.setEmail(email);
-        parent.setPassword(passwordEncoder.encode(rawPassword));
-        parent.setPhoneNumber(phoneNumber);
-        parent.setAddress(address);
-        parent.setProfilePictureUrl(profilePictureUrl); // NEW
-
-        List<User> children = userRepo.findAllById(childIds);
-        parent.getChildren().addAll(children);
-
-        return parentRepo.save(parent);
-    }
-
-    public ParentProfile updateParent(Long id, UpdateParentRequest req) {
-        ParentProfile parent = getById(id);
-
-        if (!parent.getName().equals(req.name())) {
-            parentRepo.findByName(req.name())
-                    .ifPresent(existing -> {
-                        if (!existing.getId().equals(id)) {
-                            throw new IllegalStateException("Parent name already taken");
-                        }
-                    });
-        }
-
         parent.setName(req.name());
         parent.setEmail(req.email());
         parent.setPhoneNumber(req.phoneNumber());
         parent.setAddress(req.address());
-        parent.setProfilePictureUrl(req.profilePictureUrl());
 
-        // Replace children with the new list
-        parent.getChildren().clear();
+        // No password for parents in this app
+        parent.setPassword(null);
+
+        parent.setProfilePictureUrl(null);
+
+        // Attach children if IDs provided
         if (req.childIds() != null && !req.childIds().isEmpty()) {
-            List<User> children = userRepo.findAllById(req.childIds());
-            parent.getChildren().addAll(children);
+            Set<Children> children = new HashSet<>(childrenRepository.findAllById(req.childIds()));
+            parent.setChildren(children);    // now a Set<User>
         }
 
-        return parentRepo.save(parent);
+        return parentProfileRepository.save(parent);
     }
 
 
-    public ParentProfile getById(Long id) {
-        return parentRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + id));
+    public ParentProfile update(Long id, UpdateParentRequest req) {
+        ParentProfile parent = getById(id);
+
+        if (req.name() != null && !req.name().isBlank()) {
+            parent.setName(req.name());
+        }
+        if (req.email() != null && !req.email().isBlank()) {
+            parent.setEmail(req.email());
+        }
+        if (req.phoneNumber() != null) {
+            parent.setPhoneNumber(req.phoneNumber());
+        }
+        if (req.address() != null && !req.address().isBlank()) {
+            parent.setAddress(req.address());
+        }
+
+        // Update children if provided (if null, keep existing)
+        if (req.childIds() != null && !req.childIds().isEmpty()) {
+            Set<Children> children = new HashSet<>(childrenRepository.findAllById(req.childIds()));
+            parent.setChildren(children);    // now a Set<User>
+        }
+
+        return parentProfileRepository.save(parent);
     }
 
-    public ParentProfile save(ParentProfile parent) {
-        return parentRepo.save(parent);
+    public void delete(Long id) {
+        ParentProfile parent = getById(id);
+
+        // Delete parent's profile picture
+        fileStorageService.deleteProfilePicture(parent.getProfilePictureUrl());
+
+        parentProfileRepository.delete(parent);
+    }
+
+    // === PROFILE PICTURE ====================================================
+
+    public ParentProfile updateProfilePicture(Long id, MultipartFile file) throws IOException {
+        ParentProfile parent = getById(id);
+
+        // Delete old picture if there is one
+        fileStorageService.deleteProfilePicture(parent.getProfilePictureUrl());
+
+        // Store new picture under uploads/profile-pictures/parents/{id}/...
+        String url = fileStorageService.storeParentProfilePicture(id, file);
+        parent.setProfilePictureUrl(url);
+
+        return parentProfileRepository.save(parent);
     }
 }
