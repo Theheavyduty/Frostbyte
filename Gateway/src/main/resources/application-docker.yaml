@@ -21,8 +21,28 @@ spring:
 
   cloud:
     gateway:
+      # CORS configuration - only place CORS should be configured
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:8082"
+              - "http://localhost:8081"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+
       default-filters:
         - PreserveHostHeader
+        # Remove any CORS headers from downstream to prevent duplicates
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
       routes:
         - id: user-service

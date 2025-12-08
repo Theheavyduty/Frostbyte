@@ -129,37 +129,4 @@ public class EmployeeService {
         e.setPassword(passwordEncoder.encode(req.newPassword()));
         employeeRepository.save(e);
     }
-
-    // === COMPATIBILITY HELPERS USED BY CONTROLLERS =========================
-
-    // Used by EmployeeController when checking for duplicate names
-    public boolean existsByName(String name) {
-        return employeeRepository.findByName(name).isPresent();
-    }
-
-    // Wrappers so older controller code like createEmployee
-    public Employee createEmployee(CreateEmployeeRequest req) {
-        return create(req);
-    }
-
-    public Employee updateEmployee(Long id, UpdateEmployeeRequest req) {
-        return update(id, req);
-    }
-
-    public List<Employee> getAllEmployees() {
-        return getAll();
-    }
-
-    public void deleteEmployee(Long id) {
-        delete(id);
-    }
-
-    public Optional<Employee> authenticateByNameAndPassword(String name, String password) {
-        return employeeRepository.findByName(name)
-                .filter(e -> passwordEncoder.matches(password, e.getPassword()));
-    }
-
-    public Employee save(Employee employee) {
-        return employeeRepository.save(employee);
-    }
 }

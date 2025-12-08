@@ -38,6 +38,9 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
 
+                // Disable CORS here - Gateway handles it
+                .cors(cors -> cors.disable())
+
                 .authorizeHttpRequests(auth -> auth
                         // Public static resources and APIs
                         .requestMatchers(
@@ -45,12 +48,14 @@ public class SecurityConfig {
                                 "/index.html",
                                 "/test.html",
                                 "/api/auth/login",
+                                "/api/**",
                                 "/h2-console/**",
                                 "/js/**",
                                 "/css/**",
                                 "/images/**",
                                 "/profile-pictures/**",
-                                "/test"
+                                "/test",
+                                "/error"
                         ).permitAll()
                         // WebAuthn LOGIN endpoints are public
                         .requestMatchers(
