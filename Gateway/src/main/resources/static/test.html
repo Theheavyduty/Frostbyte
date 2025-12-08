@@ -197,45 +197,28 @@
 
                 const res = await fetch("/logout", {
                     method: "POST",
-                    credentials: "include",
-                    redirect: "follow",
-                    headers: {
-                        "Content-Type": "application/x-www-form-urlencoded"
-                    }
+                    credentials: "include"
                 });
 
                 console.log("Logout response status:", res.status);
-
-                // Even if we get a 404 (from redirect to /login?logout), the session
-                // has been invalidated. The logout itself succeeded.
-                // Spring Security clears the session BEFORE redirecting.
-
-                // Update UI immediately
-                setAuthStatus({
-                    checked: true,
-                    loggedIn: false,
-                    username: null,
-                    message: "Not logged in. Please login first."
-                });
-
-                // Also verify with backend after a short delay
-                setTimeout(() => {
-                    checkAuthStatus();
-                }, 300);
             } catch (err) {
                 console.error("Logout error:", err);
-                // Still update UI and check auth status even if there was an error
-                setAuthStatus({
-                    checked: true,
-                    loggedIn: false,
-                    username: null,
-                    message: "Logged out (with error: " + err.message + ")"
-                });
-                setTimeout(() => {
-                    checkAuthStatus();
-                }, 300);
             }
+
+            // Optimistically mark as logged out in the UI
+            setAuthStatus({
+                checked: true,
+                loggedIn: false,
+                username: null,
+                message: "Not logged in. Please login first."
+            });
+
+            // Then confirm with the backend after a short delay
+            setTimeout(() => {
+                checkAuthStatus();
+            }, 300);
         };
+
 
 // Add this debug version to see what the backend is actually returning
 
