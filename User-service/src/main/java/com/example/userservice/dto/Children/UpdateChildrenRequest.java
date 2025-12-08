@@ -2,6 +2,7 @@ package com.example.userservice.dto.Children;
 
 import jakarta.validation.constraints.Email;
 
+import java.time.LocalDate;
 
 public record UpdateChildrenRequest(
         String name,
@@ -9,6 +10,6 @@ public record UpdateChildrenRequest(
         Integer phoneNumber,
         String address,
         String profilePictureUrl,
-        String departments
+        String departments,
+        LocalDate birthday
 ) { }
-

@@ -137,7 +137,7 @@ public class EmployeeService {
         return employeeRepository.findByName(name).isPresent();
     }
 
-    // Wrappers so older controller code like createEmployee(...) still works
+    // Wrappers so older controller code like createEmployee
     public Employee createEmployee(CreateEmployeeRequest req) {
         return create(req);
     }

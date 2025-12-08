@@ -1,10 +1,10 @@
-version: "3.8"
+version: '3.8'
 
 services:
+  # PostgreSQL Database
   postgres:
-    image: postgres:16
-    container_name: user-service-postgres
-    restart: unless-stopped
+    image: postgres:15-alpine
+    container_name: postgres
     environment:
       POSTGRES_DB: users
       POSTGRES_USER: user
@@ -12,41 +12,70 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d users"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # Redis for session storage (critical for gateway + user-service)
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # User Service
   user-service:
     build:
-      context: ./User-service
+      context: ./user-service
       dockerfile: Dockerfile
-    restart: unless-stopped
+    container_name: user-service
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_APPLICATION_NAME=user-service
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "8000:8000"
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    volumes:
+      # Mount volume for uploaded files
+      - user-service-uploads:/app/uploads
 
+  # Gateway Service
   gateway:
-    build: ./Gateway
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
     container_name: gateway
-    restart: unless-stopped
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      SPRING_PROFILES_ACTIVE: docker
     ports:
       - "8080:8080"
     depends_on:
-      user-service:
-        condition: service_started
-    volumes:
-      - ./User-service/uploads:/app/uploads
+      - user-service
+      - redis
+    networks:
+      - app-network
 
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
-  postgres_data:
+  postgres-data:
+  user-service-uploads:

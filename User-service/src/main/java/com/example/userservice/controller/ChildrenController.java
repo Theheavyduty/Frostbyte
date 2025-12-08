@@ -1,5 +1,6 @@
 package com.example.userservice.controller;
 
+import com.example.userservice.dto.Children.ChildrenResponse;
 import com.example.userservice.dto.Children.CreateChildrenRequest;
 import com.example.userservice.dto.Children.UpdateChildrenRequest;
 import com.example.userservice.model.Children;
@@ -23,13 +24,13 @@ public class ChildrenController {
 
 
     @GetMapping
-    public List<Children> getAll() {
-        return childrenService.getAll();
+    public List<ChildrenResponse> getAll() {
+        return childrenService.getAllWithParents();
     }
 
     @GetMapping("/{id}")
-    public Children getById(@PathVariable Long id) {
-        return childrenService.getById(id);
+    public ChildrenResponse getById(@PathVariable Long id) {
+        return childrenService.getByIdWithParents(id);
     }
 
     @PostMapping

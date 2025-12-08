@@ -2,6 +2,7 @@ package com.example.userservice.service;
 
 import com.example.userservice.dto.Children.CreateChildrenRequest;
 import com.example.userservice.dto.Children.UpdateChildrenRequest;
+import com.example.userservice.dto.Children.ChildrenResponse;
 import com.example.userservice.model.Children;
 import com.example.userservice.model.ParentProfile;
 import com.example.userservice.repository.ChildrenRepository;
@@ -23,22 +24,57 @@ public class ChildrenService {
     private final FileStorageService fileStorageService;
 
     public ChildrenService(ChildrenRepository childrenRepository,
-                       ParentProfileRepository parentProfileRepository,
-                       FileStorageService fileStorageService) {
+                           ParentProfileRepository parentProfileRepository,
+                           FileStorageService fileStorageService) {
         this.childrenRepository = childrenRepository;
         this.parentProfileRepository = parentProfileRepository;
         this.fileStorageService = fileStorageService;
     }
 
+    // === RESPONSE CONVERSION ================================================
+
+    private ChildrenResponse toResponse(Children child) {
+        List<ParentProfile> parents = parentProfileRepository.findByChildren_Id(child.getId());
+
+        List<ChildrenResponse.ParentSummary> parentSummaries = parents.stream()
+                .map(p -> new ChildrenResponse.ParentSummary(
+                        p.getId(),
+                        p.getName(),
+                        p.getEmail(),
+                        p.getPhoneNumber()
+                ))
+                .toList();
+
+        return new ChildrenResponse(
+                child.getId(),
+                child.getName(),
+                child.getEmail(),
+                child.getPhoneNumber(),
+                child.getAddress(),
+                child.getDepartments(),
+                child.getBirthday(),
+                child.getProfilePictureUrl(),
+                parentSummaries
+        );
+    }
+
     // === BASIC CRUD =========================================================
 
-    public List<Children> getAll() {
-        return childrenRepository.findAll();
+    public List<ChildrenResponse> getAllWithParents() {
+        return childrenRepository.findAll().stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public ChildrenResponse getByIdWithParents(Long id) {
+        Children child = childrenRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Child not found: " + id));
+        return toResponse(child);
     }
 
     public Children getById(Long id) {
         return childrenRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Child not found: " + id));
     }
 
     public Children create(CreateChildrenRequest req) {
@@ -47,14 +83,13 @@ public class ChildrenService {
         children.setEmail(req.email());
         children.setPhoneNumber(req.phoneNumber());
         children.setAddress(req.address());
-        children.setDepartments(req.departments()); // 👉 NEW
+        children.setDepartments(req.departments());
+        children.setBirthday(req.birthday());
 
         children.setPassword(null);
         children.setProfilePictureUrl(null);
 
         return childrenRepository.save(children);
-
-
     }
 
     public Children update(Long id, UpdateChildrenRequest req) {
@@ -74,6 +109,9 @@ public class ChildrenService {
         }
         if (req.departments() != null && !req.departments().isBlank()) {
             children.setDepartments(req.departments());
+        }
+        if (req.birthday() != null) {
+            children.setBirthday(req.birthday());
         }
         // profilePictureUrl handled via updateProfilePicture
         return childrenRepository.save(children);
@@ -109,7 +147,7 @@ public class ChildrenService {
         // Delete old picture if it exists
         fileStorageService.deleteProfilePicture(children.getProfilePictureUrl());
 
-        // Store new picture under uploads/profile-pictures/users/{id}/...
+        // Store new picture under uploads/profile-pictures/children/{id}/...
         String url = fileStorageService.storeUserProfilePicture(id, file);
         children.setProfilePictureUrl(url);
 

@@ -18,7 +18,7 @@ public class FileStorageService {
 
     public FileStorageService() {
         try {
-            Files.createDirectories(rootLocation.resolve("users"));
+            Files.createDirectories(rootLocation.resolve("children"));
             Files.createDirectories(rootLocation.resolve("parents"));
             Files.createDirectories(rootLocation.resolve("employees"));
         } catch (IOException e) {
@@ -27,7 +27,7 @@ public class FileStorageService {
     }
 
     public String storeUserProfilePicture(Long userId, MultipartFile file) throws IOException {
-        return storeProfilePicture("users", "user-" + userId, file);
+        return storeProfilePicture("children", "children-" + userId, file);
     }
 
     public String storeParentProfilePicture(Long parentId, MultipartFile file) throws IOException {

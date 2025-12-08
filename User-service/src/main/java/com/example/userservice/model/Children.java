@@ -6,8 +6,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
+
 @Entity
-@Table(name = "children") // children
+@Table(name = "children")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,7 +25,7 @@ public class Children {
     @Column
     private String email;
 
-    @Column(nullable = false)
+    @Column
     @JsonIgnore
     private String password;
 
@@ -36,7 +38,9 @@ public class Children {
     @Column
     private String departments;
 
+    @Column
+    private LocalDate birthday;
+
     @Column(name = "profile_picture_url")
     private String profilePictureUrl;
-
 }

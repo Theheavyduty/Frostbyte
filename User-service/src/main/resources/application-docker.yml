@@ -1,4 +1,7 @@
 spring:
+  application:
+    name: user-service
+
   datasource:
     url: jdbc:postgresql://postgres:5432/users
     driver-class-name: org.postgresql.Driver
@@ -9,15 +12,49 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    open-in-view: false
 
+  # Flyway configuration
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+    validate-on-migrate: true
+    out-of-order: false
 
+  # Session configuration
+  session:
+    store-type: redis
+    redis:
+      namespace: spring:session
+      flush-mode: on_save
+
+  data:
+    redis:
+      host: redis
+      port: 6379
+
+# WebAuthn configuration
 app:
   webauthn:
     rp-id: localhost
     rp-name: Frostbyte User Service
     allowed-origins:
-      - http://localhost:8000
       - http://localhost:8080
-      - http://user-service:8000
+
 server:
   port: 8000
+  forward-headers-strategy: framework
+
+# Logging - Enable Flyway logs
+logging:
+  level:
+    root: INFO
+    org.springframework.security: DEBUG
+    org.springframework.session: DEBUG
+    org.flywaydb: DEBUG
+    com.example.userservice: DEBUG

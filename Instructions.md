@@ -21,6 +21,9 @@ IMPORTANT: I take no pride in test.html. Chatgpt have created the code(Alex)
 
 Full directory: Frostbyte/User-service/src/main/resources/static/test.html
 
+## What the ports the different modules run on
+- User-service: 8000 (docker), 8001 (local)
+
 ## How to install maven
 
 Go to this link: https://maven.apache.org/install.html
@@ -45,10 +48,10 @@ curl -X POST http://localhost:8000/api/employees \
 ## Todo-list
 
 #### Backend
-- [ ] Implemented user-service (including departments)
+- [X] Implemented user-service
 - [X] Implemented passkeys
 - [ ] Implemented check-service
-- [ ] Implemented Gateway *(extra functionality)*
+- [X] Implemented Gateway *(extra functionality)*
 - [ ] Added frontend to gateway *(extra functionality)*
 - [ ] Implemented ActivityPlan *(extra functionality)*
 - [X] Implemented database for the user-service
@@ -56,12 +59,12 @@ curl -X POST http://localhost:8000/api/employees \
 - [ ] Scaling and loadbalance *(extra functionality)*
 - [ ] Consul *(extra functionality)*
 - [ ] Docker compose for whole project 
-- [ ] Delete user(child)/parent/employee *(extra functionality)*
+- [X] Delete user(child)/parent/employee *(extra functionality)*
 - [X] Edit user(child)/parent/employee
-- [ ] register user(child)/parent/employee
-- [ ] Network for docker *(extra functionality)*
-- [ ] Add session token *(extra functionality)*
-- [ ] Healthchecks *(extra functionality)*
+- [X] register user(child)/parent/employee
+- [X] Network for docker *(extra functionality)*
+- [X] Add session token *(extra functionality)*
+- [X] Healthchecks *(extra functionality)*
 
 ## Todo list frontend
 - [ ] test
