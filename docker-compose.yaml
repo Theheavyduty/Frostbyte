@@ -21,7 +21,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis for session storage (critical for gateway + user-service)
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -55,6 +54,23 @@ services:
     volumes:
       # Mount volume for uploaded files
       - user-service-uploads:/app/uploads
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "8081:8081"
+    depends_on:
+      - gateway
+    networks:
+      - app-network
+    volumes:
+      # Mount source code for hot reload during development
+      - ./frontend:/app
+      - /app/node_modules
 
   # Gateway Service
   gateway:

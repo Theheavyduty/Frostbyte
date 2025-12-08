@@ -1,14 +1,14 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- ✅ Spring Boot 3.3.x (compatible with Spring Cloud 2023.0.x) -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.0</version>
+        <version>3.3.4</version>
         <relativePath/>
     </parent>
 
@@ -16,15 +16,54 @@
     <artifactId>Gateway</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>Gateway</name>
-    <description>Gateway</description>
+    <description>API gateway for the user-service</description>
 
     <properties>
         <java.version>21</java.version>
-        <!-- Spring Cloud release train for Boot 4 -->
-        <spring-cloud.version>2025.1.0</spring-cloud.version>
+        <!-- ✅ Spring Cloud BOM (Leyton) -->
+        <spring-cloud.version>2023.0.3</spring-cloud.version>
     </properties>
 
-    <!-- Import Spring Cloud BOM *before* using Cloud deps -->
+    <dependencies>
+        <!-- Spring Cloud Gateway (reactive reverse proxy) -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway</artifactId>
+        </dependency>
+
+        <!-- Security so we can configure CSRF / auth rules if needed -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- Optional but useful: actuator for health/metrics -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- Optional: load balancer (for service discovery later) -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
+
+        <!-- ✅ Test dependencies -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- ✅ Correct security test artifact (no version needed) -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -36,33 +75,6 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <dependencies>
-        <!-- Security for the gateway (you already have GatewaySecurityConfig) -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-        </dependency>
-
-        <!-- New MVC-based Gateway starter (Servlet/Tomcat) -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-gateway-server-webmvc</artifactId>
-        </dependency>
-
-        <!-- Optional: LoadBalancer if you later use lb://user-service URIs -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
-        </dependency>
-
-        <!-- (Optional) actuator, tests, etc. -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
 
     <build>
         <plugins>
