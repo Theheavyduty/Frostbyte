@@ -14,7 +14,10 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+//This is the users who are gonna login to the application
 public class Employee {
+
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
