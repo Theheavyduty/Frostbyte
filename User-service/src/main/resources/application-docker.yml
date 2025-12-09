@@ -45,6 +45,8 @@ app:
     rp-name: Frostbyte User Service
     allowed-origins:
       - http://localhost:8080
+      - http://localhost:8081
+      - http://localhost:8082
 
 server:
   port: 8000

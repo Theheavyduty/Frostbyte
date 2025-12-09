@@ -28,23 +28,6 @@ Full directory: Frostbyte/User-service/src/main/resources/static/test.html
 
 Go to this link: https://maven.apache.org/install.html
 
-
-## Create a test user as a employee
-Run this command
-```` 
-curl -X POST http://localhost:8000/api/employees \
-  -H "Content-Type: application/json" \
-  -d '{
-        "name": "bob",
-        "email": "bob@example.com",
-        "password": "secret123",
-        "phoneNumber": 12345678,
-        "address": "Somewhere",
-        "profilePictureUrl": null
-      }'
-````
-
-
 ## Todo-list
 
 #### Backend
@@ -52,13 +35,9 @@ curl -X POST http://localhost:8000/api/employees \
 - [X] Implemented passkeys
 - [ ] Implemented check-service
 - [X] Implemented Gateway *(extra functionality)*
-- [ ] Added frontend to gateway *(extra functionality)*
-- [ ] Implemented ActivityPlan *(extra functionality)*
 - [X] Implemented database for the user-service
 - [ ] Implemented database for the Check-service
-- [ ] Scaling and loadbalance *(extra functionality)*
-- [ ] Consul *(extra functionality)*
-- [ ] Docker compose for whole project 
+- [X] Docker compose for whole project *(maybe only backend?)*
 - [X] Delete user(child)/parent/employee *(extra functionality)*
 - [X] Edit user(child)/parent/employee
 - [X] register user(child)/parent/employee
