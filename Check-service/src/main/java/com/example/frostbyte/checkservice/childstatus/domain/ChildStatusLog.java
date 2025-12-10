@@ -22,9 +22,7 @@ public class ChildStatusLog {
     @Enumerated(EnumType.STRING)
     private ChildStatus status; // HENTET / LEVERT / FRAVAER / SYK
 
-    @Enumerated(EnumType.STRING)
-    private KindergartenDepartment department;
-    private LocalDateTime eventTime; // Sykdom - logg tidspunkt
+    private LocalDateTime eventTime; // Sykdom - logg tidspunkt   - check date and time??
     private Long registeredByEmployeeId;
 
     private String symptoms; // filled in only for Sykdom

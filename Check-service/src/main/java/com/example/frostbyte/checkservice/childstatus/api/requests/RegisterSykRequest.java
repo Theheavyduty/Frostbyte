@@ -1,6 +1,5 @@
 package com.example.frostbyte.checkservice.childstatus.api.requests;
 
-import com.example.frostbyte.checkservice.childstatus.domain.KindergartenDepartment;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
