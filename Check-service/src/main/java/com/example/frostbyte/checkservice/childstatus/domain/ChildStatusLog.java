@@ -22,13 +22,11 @@ public class ChildStatusLog {
     @Enumerated(EnumType.STRING)
     private ChildStatus status; // HENTET / LEVERT / FRAVAER / SYK
 
-    private LocalDateTime eventTime; // Sykdom - logg tidspunkt   - check date and time??
-    private Long registeredByEmployeeId;
-
+    // Sykdom & Fravaer (Optional fields)
+    private LocalDateTime eventTime; // Sykdom - logg tidspunkt  ex) 2025-12-10T15:35:00 (DB - Postgres)
     private String symptoms; // filled in only for Sykdom
     private String absenceReason; // filled in only for FRAVAER
 
-    //TODO: Need  `status == SYK` -> symptoms
-    //TODO: Need `status == FRAVAER` -> absenceReason
+    private Long registeredByEmployeeId;
     //TODO : both symptoms and absenceReason is nullable in DB
 }
