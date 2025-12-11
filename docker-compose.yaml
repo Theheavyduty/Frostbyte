@@ -33,6 +33,20 @@ services:
     ports:
       - "8000:8000"
 
+  check-service:
+    build:
+      context: ./Check-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_APPLICATION_NAME=check-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "9000:9000"
+
   gateway:
     build: ./Gateway
     container_name: gateway
