@@ -1,7 +1,9 @@
 package com.example.frostbyte.checkservice.childstatus.service;
 
+import com.example.frostbyte.checkservice.childstatus.api.requests.RegisterChildStatusRequest;
 import com.example.frostbyte.checkservice.childstatus.api.requests.RegisterFravaerRequest;
 import com.example.frostbyte.checkservice.childstatus.api.requests.RegisterSykRequest;
+import com.example.frostbyte.checkservice.childstatus.api.response.ChildStatusResponse;
 import com.example.frostbyte.checkservice.childstatus.domain.ChildStatus;
 import com.example.frostbyte.checkservice.childstatus.domain.ChildStatusLog;
 import com.example.frostbyte.checkservice.childstatus.repository.ChildStatusLogRepo;
@@ -24,9 +26,10 @@ public class ChildStatusLogService {
                 request.childId(),
                 ChildStatus.SYK,
                 request.sicknessTime(),
-                request.employeeId(),
                 request.symptoms(),
-                null
+                null,
+                request.employeeId()
+
         );
         return Repo.save(log);
 
@@ -38,10 +41,39 @@ public class ChildStatusLogService {
                 request.childId(),
                 ChildStatus.FRAVAER,
                 LocalDateTime.now(),
-                request.employeeId(),
                 null,
-                request.absenceReasons()
+                request.absenceReasons(),
+                request.employeeId()
         );
         return Repo.save(log);
+    }
+
+    public ChildStatusLog registerChildStatus(RegisterChildStatusRequest request) {
+        var log = new ChildStatusLog(
+                null,
+                request.childId(),
+                request.status(),
+                LocalDateTime.now(),
+                null,
+                null,
+                request.employeeId()
+        );
+        return Repo.save(log);
+    }
+
+    // If status not exist return null -> Frontend show "ingen status registrert ennå"
+    public ChildStatusLog getChildStatusLatest(Long childId) {
+        return Repo.findFirstByChildIdOrderByEventTimeDesc(childId);
+    }
+
+    public ChildStatusResponse toResponse(ChildStatusLog log) {
+        if (log == null) return null;
+        return new ChildStatusResponse(
+                log.getChildId(),
+                log.getStatus(),
+                log.getEventTime(),
+                log.getSymptoms(),
+                log.getAbsenceReason()
+        );
     }
 }
