@@ -10,6 +10,6 @@ RUN mvn -pl user-service -am clean package -DskipTests
 
 FROM eclipse-temurin:21-alpine
 WORKDIR /app
-COPY --from=build /build/target/User-service-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /build/user-service/target/*.jar app.jar
 EXPOSE 8000
 ENTRYPOINT ["java",  "-jar", "app.jar"]

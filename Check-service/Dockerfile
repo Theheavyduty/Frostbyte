@@ -22,7 +22,7 @@ FROM eclipse-temurin:21-alpine
 WORKDIR /app
 
 # Copy built JAR from previous stage
-COPY --from=build /build/target/Check-service-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /build/check-service/target/*.jar app.jar
 
 # Expose container internal port
 EXPOSE 9000
