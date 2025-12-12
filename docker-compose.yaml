@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   postgres:
     image: postgres:16
@@ -21,8 +19,8 @@ services:
 
   user-service:
     build:
-      context: ./User-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: User-service/Dockerfile
     restart: unless-stopped
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -35,8 +33,8 @@ services:
 
   check-service:
     build:
-      context: ./Check-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Check-service/Dockerfile
     restart: unless-stopped
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -48,7 +46,9 @@ services:
       - "9000:9000"
 
   gateway:
-    build: ./Gateway
+    build:
+     context: .
+     dockerfile: Gateway/Dockerfile
     container_name: gateway
     restart: unless-stopped
     environment:
