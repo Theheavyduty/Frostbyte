@@ -1,0 +1,16 @@
+server:
+  port: 9000
+
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/users  # same DB with user-service
+    driver-class-name: org.postgresql.Driver
+    username: user
+    password: secret
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
