@@ -144,5 +144,6 @@
     <modules>
         <module>user-service</module>
         <module>check-service</module>
+        <module>gateway</module>
     </modules>
 </project>

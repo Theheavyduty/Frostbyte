@@ -14,7 +14,7 @@
 	</parent>
 
 	<artifactId>check-service</artifactId>
-	<name>Check Service</name>
+	<name>check service</name>
 	<description>Service for check-in/out, status, absence, sickness</description>
 
 	<dependencies>

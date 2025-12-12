@@ -1,8 +1,13 @@
 FROM maven:3.9.4-eclipse-temurin-21 AS build
 WORKDIR  /build
 COPY pom.xml .
-COPY src ./src
-RUN mvn clean package -DskipTests
+
+COPY user-service/pom.xml user-service/pom.xml
+COPY check-service/pom.xml check-service/pom.xml
+COPY gateway/pom.xml gateway/pom.xml
+
+COPY gateway/src gateway/src
+RUN mvn -pl gateway -am clean package -DskipTests
 
 FROM eclipse-temurin:21-alpine
 WORKDIR /app
