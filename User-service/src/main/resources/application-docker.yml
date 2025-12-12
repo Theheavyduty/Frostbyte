@@ -18,5 +18,6 @@ app:
     allowed-origins:
       - http://localhost:8000
       - http://localhost:8080
+      - http://user-service:8000
 server:
   port: 8000

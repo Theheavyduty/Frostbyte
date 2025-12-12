@@ -58,6 +58,8 @@ services:
     depends_on:
       user-service:
         condition: service_started
+    volumes:
+      - ./User-service/uploads:/app/uploads
 
 
 volumes:

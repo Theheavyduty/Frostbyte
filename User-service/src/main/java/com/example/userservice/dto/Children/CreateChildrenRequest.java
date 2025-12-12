@@ -1,14 +1,14 @@
-package com.example.userservice.dto.Employee;
+package com.example.userservice.dto.Children;
+
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 
-public record CreateEmployeeRequest(
+public record CreateChildrenRequest(
         @NotBlank String name,
         @Email String email,
-        @NotBlank String password,
         @NotNull Integer phoneNumber,
-        @NotBlank String address
+        @NotBlank String address,
+        @NotBlank String departments
 ) { }

@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Positive;
 public record RegisterRequest(
         @NotBlank String name,
         @Email @NotBlank String email,
-        @NotBlank String password,
+        String password,
         @NotNull @Positive Integer phoneNumber,
         @NotBlank String address,
         String profilePictureUrl
