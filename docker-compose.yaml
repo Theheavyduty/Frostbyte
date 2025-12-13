@@ -70,7 +70,7 @@ services:
 
 
   check-service:
-    build: ./check-service
+    build: ./Check-service
     container_name: check-service
     restart: unless-stopped
     environment:
