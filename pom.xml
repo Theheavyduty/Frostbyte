@@ -24,7 +24,5 @@
     </properties>
 
     <modules>
-        <module>user-service</module>
-        <module>check-service</module>
     </modules>
 </project>

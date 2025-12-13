@@ -6,22 +6,8 @@ spring:
     activate:
       on-profile: docker
 
-  # Session configuration - critical for sharing sessions with user-service
-  session:
-    store-type: redis
-    redis:
-      namespace: spring:session
-      flush-mode: on_save
-
-  # Redis connection for session storage
-  data:
-    redis:
-      host: redis
-      port: 6379
-
   cloud:
     gateway:
-      # CORS configuration - only place CORS should be configured
       globalcors:
         corsConfigurations:
           '[/**]':
@@ -41,10 +27,19 @@ spring:
 
       default-filters:
         - PreserveHostHeader
-        # Remove any CORS headers from downstream to prevent duplicates
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
       routes:
+        - id: check-service
+          uri: http://check-service:9000
+          predicates:
+            - Path=/api/child-status/**
+          filters:
+            - PreserveHostHeader
+            - AddRequestHeader=X-Forwarded-Proto, http
+            - AddRequestHeader=X-Forwarded-Host, localhost:8080
+            - AddRequestHeader=X-Forwarded-Port, 8080
+
         - id: user-service
           uri: http://user-service:8000
           predicates:
