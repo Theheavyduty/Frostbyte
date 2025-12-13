@@ -96,6 +96,7 @@
                     <li>Register syk: <code>POST /api/child-status/syk</code></li>
                     <li>Register fravær: <code>POST /api/child-status/fravaer</code></li>
                     <li>Get latest status: <code>GET /api/child-status/children/{"{childId}"}/latest</code></li>
+                    <li>Get status history: <code>GET /api/child-status/children/{"{childId}"}/history</code></li>
                     <li>Get log by ID: <code>GET /api/child-status/logs/{"{id}"}</code></li>
                     <li>Update event time: <code>PUT /api/child-status/logs/{"{id}"}</code></li>
                 </ul>
@@ -919,6 +920,7 @@
 
                 let statusDisplay = `📋 Latest Status for Child ID: ${result.childId}\n`;
                 statusDisplay += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                statusDisplay += `Log ID: ${result.id}\n`;
                 statusDisplay += `Status: ${result.status}\n`;
                 statusDisplay += `Time: ${formatTime(result.registertedAt)}\n`;
 
@@ -933,6 +935,51 @@
                 setOutput(statusDisplay);
             } catch (err) {
                 alert("Get latest status failed: " + err.message);
+            }
+        };
+
+        // Get full status history for a child
+        const handleGetHistory = async (e) => {
+            e.preventDefault();
+            try {
+                const obj = getFormObj(e.target);
+                const res = await fetch(`/api/child-status/children/${obj.childId}/history`);
+                if (!res.ok) throw new Error(await res.text());
+                const logs = await res.json();
+
+                if (logs.length === 0) {
+                    setOutput("Ingen status registrert ennå for dette barnet.");
+                    return;
+                }
+
+                const formatTime = (isoString) => {
+                    if (!isoString) return "N/A";
+                    const date = new Date(isoString);
+                    return date.toLocaleString('no-NO', {
+                        dateStyle: 'medium',
+                        timeStyle: 'short'
+                    });
+                };
+
+                let historyDisplay = `📜 Status History for Child ID: ${obj.childId} (${logs.length} entries)\n`;
+                historyDisplay += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+                logs.forEach((log, index) => {
+                    historyDisplay += `${index + 1}. [Log ID: ${log.id}] ${log.status}\n`;
+                    historyDisplay += `   Time: ${formatTime(log.eventTime)}\n`;
+                    if (log.symptoms) {
+                        historyDisplay += `   Symptoms: ${log.symptoms}\n`;
+                    }
+                    if (log.absenceReason) {
+                        historyDisplay += `   Absence Reason: ${log.absenceReason}\n`;
+                    }
+                    historyDisplay += `   Registered by Employee ID: ${log.registeredByEmployeeId}\n\n`;
+                });
+
+                historyDisplay += `\n📄 Raw JSON:\n${JSON.stringify(logs, null, 2)}`;
+                setOutput(historyDisplay);
+            } catch (err) {
+                alert("Get history failed: " + err.message);
             }
         };
 
@@ -1020,6 +1067,18 @@
                         </select>
                     </div>
                     <button type="submit">Get Latest Status</button>
+                </form>
+
+                <h3>Get Status History (Log)</h3>
+                <form onSubmit={handleGetHistory}>
+                    <div>
+                        <label>Child:</label>
+                        <select name="childId" required>
+                            <option value="">-- Select Child --</option>
+                            {children.map(c => <option key={c.id} value={c.id}>{c.name} (ID: {c.id})</option>)}
+                        </select>
+                    </div>
+                    <button type="submit">Get Full History</button>
                 </form>
 
                 <pre>{output}</pre>

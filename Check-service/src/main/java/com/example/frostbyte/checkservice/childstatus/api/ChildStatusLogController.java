@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/child-status")
 public class ChildStatusLogController {
@@ -54,6 +56,13 @@ public class ChildStatusLogController {
             return ResponseEntity.noContent().build(); // 204
         }
         return ResponseEntity.ok(service.toResponse(log)); // 200
+    }
+
+    @GetMapping("/children/{childId}/history")
+    public ResponseEntity<List<ChildStatusLog>> getChildStatusHistory(
+            @PathVariable Long childId) {
+        var logs = service.getChildStatusHistory(childId);
+        return ResponseEntity.ok(logs);
     }
 
     @PostMapping("/syk")

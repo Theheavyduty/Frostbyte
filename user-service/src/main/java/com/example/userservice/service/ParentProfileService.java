@@ -36,6 +36,7 @@ public class ParentProfileService {
         this.fileStorageService = fileStorageService;
     }
 
+    // === RESPONSE CONVERSION ================================================
 
     private ParentResponse toResponse(ParentProfile parent) {
         List<ParentChildRelationship> relationships = relationshipRepository.findByParentId(parent.getId());
@@ -72,6 +73,7 @@ public class ParentProfileService {
         );
     }
 
+    // === BASIC CRUD =========================================================
 
     public List<ParentResponse> getAllWithChildren() {
         return parentProfileRepository.findAll().stream()
@@ -101,6 +103,7 @@ public class ParentProfileService {
 
         ParentProfile savedParent = parentProfileRepository.save(parent);
 
+        // Create relationships for provided child IDs
         if (req.childIds() != null && !req.childIds().isEmpty()) {
             List<Children> children = childrenRepository.findAllById(req.childIds());
             for (Children child : children) {
@@ -115,6 +118,11 @@ public class ParentProfileService {
         }
 
         return savedParent;
+    }
+
+    public ParentResponse createAndGetResponse(CreateParentRequest req) {
+        ParentProfile parent = create(req);
+        return toResponse(parent);
     }
 
     public ParentProfile update(Long id, UpdateParentRequest req) {
@@ -133,10 +141,13 @@ public class ParentProfileService {
             parent.setAddress(req.address());
         }
 
+        // Update children relationships if provided
         if (req.childIds() != null) {
+            // Remove existing relationships
             List<ParentChildRelationship> existingRelationships = relationshipRepository.findByParentId(id);
             relationshipRepository.deleteAll(existingRelationships);
 
+            // Create new relationships
             if (!req.childIds().isEmpty()) {
                 List<Children> children = childrenRepository.findAllById(req.childIds());
                 for (Children child : children) {
@@ -154,26 +165,41 @@ public class ParentProfileService {
         return parentProfileRepository.save(parent);
     }
 
+    public ParentResponse updateAndGetResponse(Long id, UpdateParentRequest req) {
+        ParentProfile parent = update(id, req);
+        return toResponse(parent);
+    }
+
     public void delete(Long id) {
         ParentProfile parent = getById(id);
 
+        // Delete parent's profile picture
         fileStorageService.deleteProfilePicture(parent.getProfilePictureUrl());
 
+        // Delete all relationships (cascades from ParentProfile, but explicit for clarity)
         List<ParentChildRelationship> relationships = relationshipRepository.findByParentId(id);
         relationshipRepository.deleteAll(relationships);
 
         parentProfileRepository.delete(parent);
     }
 
+    // === PROFILE PICTURE ====================================================
 
     public ParentProfile updateProfilePicture(Long id, MultipartFile file) throws IOException {
         ParentProfile parent = getById(id);
 
+        // Delete old picture if there is one
         fileStorageService.deleteProfilePicture(parent.getProfilePictureUrl());
 
+        // Store new picture under uploads/profile-pictures/parents/{id}/...
         String url = fileStorageService.storeParentProfilePicture(id, file);
         parent.setProfilePictureUrl(url);
 
         return parentProfileRepository.save(parent);
+    }
+
+    public ParentResponse updateProfilePictureAndGetResponse(Long id, MultipartFile file) throws IOException {
+        ParentProfile parent = updateProfilePicture(id, file);
+        return toResponse(parent);
     }
 }

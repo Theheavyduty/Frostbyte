@@ -38,7 +38,7 @@ services:
       # Mount volume for uploaded files
       - user-service-uploads:/app/uploads
 
-
+  # Uncomment this to run frontend on docker
   #  frontend:
   #    build:
   #      context: ./Frontend

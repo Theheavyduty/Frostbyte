@@ -33,13 +33,13 @@ public class ParentController {
     }
 
     @PostMapping
-    public ParentProfile create(@RequestBody CreateParentRequest req) {
-        return parentProfileService.create(req);
+    public ParentResponse create(@RequestBody CreateParentRequest req) {
+        return parentProfileService.createAndGetResponse(req);
     }
 
     @PutMapping("/{id}")
-    public ParentProfile update(@PathVariable Long id, @RequestBody UpdateParentRequest req) {
-        return parentProfileService.update(id, req);
+    public ParentResponse update(@PathVariable Long id, @RequestBody UpdateParentRequest req) {
+        return parentProfileService.updateAndGetResponse(id, req);
     }
 
     @DeleteMapping("/{id}")
@@ -49,10 +49,10 @@ public class ParentController {
     }
 
     @PostMapping("/{id}/profile-picture")
-    public ParentProfile uploadProfilePicture(
+    public ParentResponse uploadProfilePicture(
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file
     ) throws IOException {
-        return parentProfileService.updateProfilePicture(id, file);
+        return parentProfileService.updateProfilePictureAndGetResponse(id, file);
     }
 }

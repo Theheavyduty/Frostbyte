@@ -10,6 +10,7 @@ import com.example.frostbyte.checkservice.childstatus.repository.ChildStatusLogR
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class ChildStatusLogService {
@@ -64,6 +65,10 @@ public class ChildStatusLogService {
     // If status not exist return null -> Frontend show "ingen status registrert ennå"
     public ChildStatusLog getChildStatusLatest(Long childId) {
         return Repo.findFirstByChildIdOrderByEventTimeDesc(childId);
+    }
+
+    public List<ChildStatusLog> getChildStatusHistory(Long childId) {
+        return Repo.findByChildIdOrderByEventTimeDesc(childId);
     }
 
     public ChildStatusLog updateEventTime(Long id, LocalDateTime newEventTime) {

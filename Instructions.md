@@ -33,10 +33,10 @@ Go to this link: https://maven.apache.org/install.html
 #### Backend
 - [X] Implemented user-service
 - [X] Implemented passkeys
-- [ ] Implemented check-service
+- [X] Implemented check-service
 - [X] Implemented Gateway *(extra functionality)*
 - [X] Implemented database for the user-service
-- [ ] Implemented database for the Check-service
+- [X] Implemented database for the Check-service
 - [X] Docker compose for whole project *(maybe only backend?)*
 - [X] Delete user(child)/parent/employee *(extra functionality)*
 - [X] Edit user(child)/parent/employee
