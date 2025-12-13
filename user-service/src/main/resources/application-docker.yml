@@ -17,7 +17,6 @@ spring:
     show-sql: false
     open-in-view: false
 
-  # Flyway configuration
   flyway:
     enabled: true
     baseline-on-migrate: true
@@ -26,17 +25,7 @@ spring:
     validate-on-migrate: true
     out-of-order: false
 
-  # Session configuration
-  session:
-    store-type: redis
-    redis:
-      namespace: spring:session
-      flush-mode: on_save
 
-  data:
-    redis:
-      host: redis
-      port: 6379
 
 # WebAuthn configuration
 app:
@@ -52,7 +41,6 @@ server:
   port: 8000
   forward-headers-strategy: framework
 
-# Logging - Enable Flyway logs
 logging:
   level:
     root: INFO
