@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User-Service React Test</title>
+    <style>
+        body { font-family: sans-serif; margin: 2rem; }
+        h1 { margin-bottom: 1rem; }
+        section { border: 1px solid #ccc; border-radius: 8px; padding: 1rem; margin-bottom: 2rem; }
+        h2 { margin-top: 0; }
+        form > div { margin-bottom: 0.5rem; }
+        label { display: inline-block; min-width: 140px; }
+        input[type="text"],
+        input[type="date"],
+        input[type="number"],
+        input[type="email"],
+        input[type="password"],
+        select { width: 220px; }
+        button { margin-right: 0.5rem; margin-top: 0.25rem; }
+        pre { background: #f5f5f5; padding: 0.5rem; max-height: 250px; overflow: auto; font-size: 0.85rem; }
+        img.preview { max-width: 200px; max-height: 200px; display: block; margin-top: 0.5rem; }
+        .small { font-size: 0.85rem; color: #555; }
+        .row { margin-bottom: 0.5rem; }
+        .container { max-width: 1100px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+    const { useState, useEffect } = React;
+
+    async function jsonFetch(url, options = {}) {
+        const res = await fetch(url, options);
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error(res.status + " " + res.statusText + ": " + text);
+        }
+        return res.json();
+    }
+
+    function getFormObj(form) {
+        const data = new FormData(form);
+        const obj = {};
+        for (const [k, v] of data.entries()) {
+            obj[k] = v;
+        }
+        return obj;
+    }
+
+    function parseIds(str) {
+        if (!str) return [];
+        return str.split(',').map((s) => s.trim()).filter((s) => s.length > 0).map(Number);
+    }
+
+    // ---------- base64url helpers for WebAuthn ----------
+    function base64urlToUint8Array(base64url) {
+        const padding = "=".repeat((4 - (base64url.length % 4)) % 4);
+        const base64 = (base64url + padding).replace(/-/g, "+").replace(/_/g, "/");
+        const raw = atob(base64);
+        const output = new Uint8Array(raw.length);
+        for (let i = 0; i < raw.length; ++i) {
+            output[i] = raw.charCodeAt(i);
+        }
+        return output;
+    }
+
+    function uint8ArrayToBase64url(arr) {
+        let binary = "";
+        arr.forEach((b) => (binary += String.fromCharCode(b)));
+        let base64 = btoa(binary);
+        return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    }
+
+    function InfoSection() {
+        return (
+            <section>
+                <h2>Info</h2>
+                <p className="small">API Endpoints:</p>
+                <ul className="small">
+                    <li>Departments: <code>/api/departments</code></li>
+                    <li>Children: <code>/api/children</code></li>
+                    <li>Parents: <code>/api/parents</code></li>
+                    <li>Employees: <code>/api/employees</code></li>
+                    <li>Children by Department: <code>/api/employees/departments/{"{id}"}/children</code></li>
+                    <li>Passkeys register: <code>/webauthn/register/options</code> → <code>/webauthn/register</code></li>
+                    <li>Passkeys login: <code>/webauthn/authenticate/options</code> → <code>/login/webauthn</code></li>
+                </ul>
+                <p className="small">Check-Service Endpoints (port 9000):</p>
+                <ul className="small">
+                    <li>Register status (HENTET/LEVERT): <code>POST /api/child-status/checks</code></li>
+                    <li>Register syk: <code>POST /api/child-status/syk</code></li>
+                    <li>Register fravær: <code>POST /api/child-status/fravaer</code></li>
+                    <li>Get latest status: <code>GET /api/child-status/children/{"{childId}"}/latest</code></li>
+                    <li>Get status history: <code>GET /api/child-status/children/{"{childId}"}/history</code></li>
+                    <li>Get log by ID: <code>GET /api/child-status/logs/{"{id}"}</code></li>
+                    <li>Update event time: <code>PUT /api/child-status/logs/{"{id}"}</code></li>
+                </ul>
+            </section>
+        );
+    }
+
+    // ---------- Passkeys (WebAuthn) Section ----------
+    function PasskeySection() {
+        const [credLabel, setCredLabel] = useState("my-device");
+        const [registerStatus, setRegisterStatus] = useState("");
+        const [loginStatus, setLoginStatus] = useState("");
+
+        const [authStatus, setAuthStatus] = useState({
+            checked: false,
+            loggedIn: false,
+            username: null,
+            message: "Checking..."
+        });
+
+        const [loginUsername, setLoginUsername] = useState("");
+        const [loginPassword, setLoginPassword] = useState("");
+        const [loginError, setLoginError] = useState("");
+
+        const checkAuthStatus = async () => {
+            try {
+                const res = await fetch("/webauthn/register/options", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include"
+                });
+
+                if (res.status === 401 || res.status === 403 || res.redirected) {
+                    setAuthStatus({
+                        checked: true,
+                        loggedIn: false,
+                        username: null,
+                        message: "Not logged in. Please login first."
+                    });
+                } else if (res.ok) {
+                    setAuthStatus({
+                        checked: true,
+                        loggedIn: true,
+                        username: null,
+                        message: "Logged in ✓ – you can register a passkey"
+                    });
+                } else {
+                    const txt = await res.text().catch(() => "");
+                    setAuthStatus({
+                        checked: true,
+                        loggedIn: false,
+                        username: null,
+                        message: "Unknown status " + res.status + (txt ? (": " + txt.slice(0, 120)) : "")
+                    });
+                }
+            } catch (err) {
+                setAuthStatus({
+                    checked: true,
+                    loggedIn: false,
+                    username: null,
+                    message: "Error checking auth: " + err.message
+                });
+            }
+        };
+
+        useEffect(() => {
+            checkAuthStatus();
+        }, []);
+
+        const handleInlineLogin = async (e) => {
+            e.preventDefault();
+            setLoginError("");
+            try {
+                const formData = new URLSearchParams();
+                formData.append("username", loginUsername);
+                formData.append("password", loginPassword);
+
+                const res = await fetch("/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: formData.toString(),
+                    credentials: "include",
+                    redirect: "manual"
+                });
+
+                setTimeout(() => {
+                    checkAuthStatus();
+                }, 200);
+            } catch (err) {
+                setLoginError("Login error: " + err.message);
+            }
+        };
+
+        const handleLogout = async () => {
+            try {
+                const res = await fetch("/logout", {
+                    method: "POST",
+                    credentials: "include",
+                    redirect: "follow",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    }
+                });
+
+                setAuthStatus({
+                    checked: true,
+                    loggedIn: false,
+                    username: null,
+                    message: "Not logged in. Please login first."
+                });
+
+                setTimeout(() => {
+                    checkAuthStatus();
+                }, 300);
+            } catch (err) {
+                console.error("Logout error:", err);
+                setAuthStatus({
+                    checked: true,
+                    loggedIn: false,
+                    username: null,
+                    message: "Logged out (with error: " + err.message + ")"
+                });
+                setTimeout(() => {
+                    checkAuthStatus();
+                }, 300);
+            }
+        };
+
+        const handleRegisterPasskey = async (e) => {
+            e.preventDefault();
+            setRegisterStatus("Getting registration options...");
+
+            try {
+                const optionsRes = await fetch("/webauthn/register/options", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({ label: credLabel })
+                });
+
+                if (!optionsRes.ok) {
+                    const errorText = await optionsRes.text();
+                    throw new Error(`Server returned ${optionsRes.status} ${optionsRes.statusText}: ${errorText}`);
+                }
+
+                const responseText = await optionsRes.text();
+                let optionsJson;
+                try {
+                    optionsJson = JSON.parse(responseText);
+                } catch (parseError) {
+                    throw new Error("Server returned invalid JSON: " + responseText.substring(0, 100));
+                }
+
+                let publicKeyOptions;
+                if (optionsJson.publicKey) {
+                    publicKeyOptions = optionsJson.publicKey;
+                } else if (optionsJson.challenge) {
+                    publicKeyOptions = optionsJson;
+                } else {
+                    throw new Error("Invalid response format. Response keys: " + Object.keys(optionsJson).join(", "));
+                }
+
+                if (!publicKeyOptions.challenge) {
+                    throw new Error("Missing challenge in response");
+                }
+
+                const publicKey = {
+                    ...publicKeyOptions,
+                    challenge: base64urlToUint8Array(publicKeyOptions.challenge),
+                    user: {
+                        ...publicKeyOptions.user,
+                        id: base64urlToUint8Array(publicKeyOptions.user.id)
+                    }
+                };
+
+                if (publicKeyOptions.excludeCredentials) {
+                    publicKey.excludeCredentials = publicKeyOptions.excludeCredentials.map((cred) => ({
+                        ...cred,
+                        id: base64urlToUint8Array(cred.id)
+                    }));
+                }
+
+                setRegisterStatus("Waiting for authenticator...");
+
+                const credential = await navigator.credentials.create({ publicKey });
+
+                setRegisterStatus("Sending credential to server...");
+
+                const credentialId = uint8ArrayToBase64url(new Uint8Array(credential.rawId));
+                const clientDataJSON = uint8ArrayToBase64url(new Uint8Array(credential.response.clientDataJSON));
+                const attestationObject = uint8ArrayToBase64url(new Uint8Array(credential.response.attestationObject));
+
+                const registrationData = {
+                    publicKey: {
+                        credential: {
+                            id: credential.id,
+                            rawId: credentialId,
+                            response: {
+                                attestationObject,
+                                clientDataJSON,
+                                transports: credential.response.getTransports ? credential.response.getTransports() : []
+                            },
+                            type: credential.type,
+                            clientExtensionResults: credential.getClientExtensionResults ? credential.getClientExtensionResults() : {},
+                            authenticatorAttachment: credential.authenticatorAttachment || "platform"
+                        },
+                        label: credLabel || "my-passkey"
+                    }
+                };
+
+                const registerRes = await fetch("/webauthn/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify(registrationData)
+                });
+
+                if (!registerRes.ok) {
+                    const errorText = await registerRes.text();
+                    throw new Error(`Server returned ${registerRes.status}: ${errorText}`);
+                }
+
+                setRegisterStatus("✅ Passkey registered successfully!");
+            } catch (err) {
+                console.error("Registration error:", err);
+                setRegisterStatus("❌ Error: " + err.message);
+            }
+        };
+
+        const handleLoginWithPasskey = async (e) => {
+            e.preventDefault();
+            setLoginStatus("Getting authentication options...");
+
+            try {
+                const optionsRes = await fetch("/webauthn/authenticate/options", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({})
+                });
+
+                if (!optionsRes.ok) {
+                    throw new Error(`Server returned ${optionsRes.status} ${optionsRes.statusText}`);
+                }
+
+                const optionsJson = await optionsRes.json();
+
+                let publicKeyOptions;
+                if (optionsJson.publicKey) {
+                    publicKeyOptions = optionsJson.publicKey;
+                } else if (optionsJson.challenge) {
+                    publicKeyOptions = optionsJson;
+                } else {
+                    throw new Error("Invalid response format: missing publicKey or challenge.");
+                }
+
+                if (!publicKeyOptions.challenge) {
+                    throw new Error("Invalid response format: missing challenge");
+                }
+
+                const publicKey = {
+                    ...publicKeyOptions,
+                    challenge: base64urlToUint8Array(publicKeyOptions.challenge)
+                };
+
+                if (publicKeyOptions.allowCredentials) {
+                    publicKey.allowCredentials = publicKeyOptions.allowCredentials.map((cred) => ({
+                        ...cred,
+                        id: base64urlToUint8Array(cred.id)
+                    }));
+                }
+
+                setLoginStatus("Waiting for authenticator...");
+
+                const assertion = await navigator.credentials.get({ publicKey });
+
+                setLoginStatus("Sending authentication to server...");
+
+                const credentialId = uint8ArrayToBase64url(new Uint8Array(assertion.rawId));
+                const clientDataJSON = uint8ArrayToBase64url(new Uint8Array(assertion.response.clientDataJSON));
+                const authenticatorData = uint8ArrayToBase64url(new Uint8Array(assertion.response.authenticatorData));
+                const signature = uint8ArrayToBase64url(new Uint8Array(assertion.response.signature));
+
+                let userHandle = "";
+                if (assertion.response.userHandle) {
+                    userHandle = uint8ArrayToBase64url(new Uint8Array(assertion.response.userHandle));
+                }
+
+                const authData = {
+                    id: assertion.id,
+                    rawId: credentialId,
+                    response: {
+                        clientDataJSON,
+                        authenticatorData,
+                        signature,
+                        userHandle
+                    },
+                    type: assertion.type
+                };
+
+                const loginRes = await fetch("/login/webauthn", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify(authData)
+                });
+
+                if (!loginRes.ok) {
+                    const errorText = await loginRes.text();
+                    throw new Error(`Server returned ${loginRes.status}: ${errorText}`);
+                }
+
+                setLoginStatus("✅ Logged in successfully with passkey!");
+
+                setTimeout(() => {
+                    checkAuthStatus();
+                }, 200);
+            } catch (err) {
+                console.error("Login error:", err);
+                setLoginStatus("❌ Error: " + err.message);
+            }
+        };
+
+        return (
+            <section>
+                <h2>Passkeys (WebAuthn)</h2>
+
+                <p className="small">
+                    <strong>Auth status:</strong> {authStatus.message}
+                </p>
+
+                {!authStatus.loggedIn && (
+                    <div>
+                        <h3>Login with Username/Password First</h3>
+                        <form onSubmit={handleInlineLogin}>
+                            <div>
+                                <label>Username:</label>
+                                <input
+                                    type="text"
+                                    value={loginUsername}
+                                    onChange={(e) => setLoginUsername(e.target.value)}
+                                    placeholder="user"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label>Password:</label>
+                                <input
+                                    type="password"
+                                    value={loginPassword}
+                                    onChange={(e) => setLoginPassword(e.target.value)}
+                                    placeholder="password"
+                                    required
+                                />
+                            </div>
+                            <button type="submit">Login</button>
+                        </form>
+                        {loginError && <p style={{ color: "red" }}>{loginError}</p>}
+                    </div>
+                )}
+
+                {authStatus.loggedIn && (
+                    <div>
+                        <h3>Register a Passkey</h3>
+                        <form onSubmit={handleRegisterPasskey}>
+                            <div>
+                                <label>Credential Label:</label>
+                                <input
+                                    type="text"
+                                    value={credLabel}
+                                    onChange={(e) => setCredLabel(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <button type="submit">Register Passkey</button>
+                        </form>
+                        <p className="small">{registerStatus}</p>
+
+                        <button onClick={handleLogout} style={{ marginTop: "1rem" }}>Logout</button>
+                    </div>
+                )}
+
+                <h3>Login with Passkey (Passwordless)</h3>
+                <form onSubmit={handleLoginWithPasskey}>
+                    <button type="submit">Login with Passkey</button>
+                </form>
+                <p className="small">{loginStatus}</p>
+            </section>
+        );
+    }
+
+    // ---------- Department Section ----------
+    function DepartmentSection() {
+        const [output, setOutput] = useState("");
+        const [departments, setDepartments] = useState([]);
+        const [lastId, setLastId] = useState(null);
+
+        const loadDepartments = async () => {
+            try {
+                const data = await jsonFetch("/api/departments");
+                setDepartments(data);
+            } catch (err) {
+                console.error("Failed to load departments:", err);
+            }
+        };
+
+        useEffect(() => { loadDepartments(); }, []);
+
+        const handleCreate = async (e) => {
+            e.preventDefault();
+            try {
+                const obj = getFormObj(e.target);
+                const dept = await jsonFetch("/api/departments", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name: obj.name })
+                });
+                setLastId(dept.id);
+                setOutput("Created department:\n" + JSON.stringify(dept, null, 2));
+                loadDepartments();
+                window.dispatchEvent(new Event('departmentsChanged'));
+            } catch (err) {
+                alert("Create department failed: " + err.message);
+            }
+        };
+
+        const handleList = async () => {
+            try {
+                const data = await jsonFetch("/api/departments");
+                setDepartments(data);
+                setOutput(JSON.stringify(data, null, 2));
+            } catch (err) {
+                alert("List departments failed: " + err.message);
+            }
+        };
+
+        const handleDelete = async (e) => {
+            e.preventDefault();
+            try {
+                const obj = getFormObj(e.target);
+                const res = await fetch(`/api/departments/${obj.id}`, { method: "DELETE" });
+                if (!res.ok && res.status !== 204) throw new Error(await res.text());
+                setOutput(`Department ${obj.id} deleted.`);
+                loadDepartments();
+                window.dispatchEvent(new Event('departmentsChanged'));
+            } catch (err) {
+                alert("Delete department failed: " + err.message);
+            }
+        };
+
+        return (
+            <section>
+                <h2>Departments (Employee-only creation)</h2>
+                <p className="small">Only employees can create departments. Children must use existing departments.</p>
+
+                <h3>Create Department</h3>
+                <form onSubmit={handleCreate}>
+                    <div><label>Name:</label><input name="name" required /></div>
+                    <button type="submit">Create Department</button>
+                </form>
+                <p className="small">Last created id: <strong>{lastId ?? "-"}</strong></p>
+
+                <h3>List / Delete Departments</h3>
+                <div className="row">
+                    <button onClick={handleList}>GET /api/departments</button>
+                </div>
+                <form onSubmit={handleDelete} style={{ display: "inline-block" }}>
+                    <label>ID:</label><input name="id" type="number" required style={{ width: "80px" }} />
+                    <button type="submit">DELETE</button>
+                </form>
+
+                <h4>Available Departments:</h4>
+                <ul className="small">
+                    {departments.map(d => <li key={d.id}>{d.id}: {d.name}</li>)}
+                </ul>
+                <pre>{output}</pre>
+            </section>
+        );
+    }
+
+    // ---------- Children Section ----------
+    function ChildrenSection() {
+        const [output, setOutput] = useState("");
+        const [lastId, setLastId] = useState(null);
+        const [photoUrl, setPhotoUrl] = useState("");
+        const [departments, setDepartments] = useState([]);
+
+        const loadDepartments = async () => {
+            try {
+                const data = await jsonFetch("/api/departments");
+                setDepartments(data);
+            } catch (err) {
+                console.error("Failed to load departments:", err);
+            }
+        };
+
+        useEffect(() => {
+            loadDepartments();
+            // Reload departments when window gains focus
+            const handleFocus = () => loadDepartments();
+            window.addEventListener('focus', handleFocus);
+            // Reload when a department is created/deleted elsewhere
+            window.addEventListener('departmentsChanged', loadDepartments);
+            return () => {
+                window.removeEventListener('focus', handleFocus);
+                window.removeEventListener('departmentsChanged', loadDepartments);
+            };
+        }, []);
+
+        const handleCreate = async (e) => {
+            e.preventDefault();
+            try {
+                const obj = getFormObj(e.target);
+                const payload = {
+                    name: obj.name,
+                    email: obj.email || null,
+                    phoneNumber: obj.phoneNumber ? parseInt(obj.phoneNumber, 10) : null,
+                    address: obj.address || null,
+                    departmentId: parseInt(obj.departmentId, 10),
+                    birthday: obj.birthday || null,
+                    additionalNotes: obj.additionalNotes || null
+                };
+                const child = await jsonFetch("/api/children", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                setLastId(child.id);
+                setOutput("Created child:\n" + JSON.stringify(child, null, 2));
+                window.dispatchEvent(new Event('childrenChanged'));
+            } catch (err) {
+                alert("Create child failed: " + err.message);
+            }
+        };
+
+        const handleUpdate = async (e) => {
+            e.preventDefault();
+            try {
+                const obj = getFormObj(e.target);
+                const id = Number(obj.id);
+                const payload = {};
+                if (obj.name) payload.name = obj.name;
+                if (obj.email) payload.email = obj.email;
+                if (obj.phoneNumber) payload.phoneNumber = parseInt(obj.phoneNumber, 10);
+                if (obj.address) payload.address = obj.address;
+                if (obj.departmentId) payload.departmentId = parseInt(obj.departmentId, 10);
+                if (obj.birthday) payload.birthday = obj.birthday;
+                if (obj.additionalNotes) payload.additionalNotes = obj.additionalNotes;
+
+                const updated = await jsonFetch(`/api/children/${id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                setOutput("Updated child:\n" + JSON.stringify(updated, null, 2));
+            } catch (err) {
+                alert("Update child failed: " + err.message);
+            }
+        };
+
+        const handleUpload = async (e) => {
+            e.preventDefault();
+            try {
+                const formData = new FormData(e.target);
+                const id = formData.get("id");
+                const uploadFormData = new FormData();
+                uploadFormData.append("file", formData.get("file"));
+                const res = await fetch(`/api/children/${id}/profile-picture`, {
+                    method: "POST",
+                    body: uploadFormData
+                });
+                if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+                const child = await res.json();
+                setPhotoUrl(child.profilePictureUrl);
+                setOutput("Uploaded:\n" + JSON.stringify(child, null, 2));
+            } catch (err) {
+                alert("Upload failed: " + err.message);
+            }
+        };
+
+        const handleList = async () => {
+            try {
+                const data = await jsonFetch("/api/children");
+                setOutput(JSON.stringify(data, null, 2));
+            } catch (err) {
+                alert("List children failed: " + err.message);
+            }
+        };
+
+        const handleGet = async (e) => {
+            e.preventDefault();
+            const obj = getFormObj(e.target);
+            try {
+                const child = await jsonFetch(`/api/children/${obj.id}`);
+                setOutput(JSON.stringify(child, null, 2));
+            } catch (err) {
+                alert("Get child failed: " + err.message);
+            }
+        };
+
+        const handleDelete = async (e) => {
+            e.preventDefault();
+            const obj = getFormObj(e.target);
+            try {
+                const res = await fetch(`/api/children/${obj.id}`, { method: "DELETE" });
+                if (!res.ok && res.status !== 204) throw new Error(await res.text());
+                setOutput(`Child ${obj.id} deleted.`);
+                window.dispatchEvent(new Event('childrenChanged'));
+            } catch (err) {
+                alert("Delete child failed: " + err.message);
+            }
+        };
+
+        return (
+            <section>
+                <h2>Children</h2>
+
+                <h3>Register Child</h3>
+                <form onSubmit={handleCreate}>
+                    <div><label>Name:</label><input name="name" required /></div>
+                    <div><label>Email:</label><input name="email" type="email" /></div>
+                    <div><label>Phone:</label><input name="phoneNumber" type="number" /></div>
+                    <div><label>Address:</label><input name="address" /></div>
+                    <div>
+                        <label>Department:</label>
+                        <select name="departmentId" required>
+                            <option value="">-- Select ({departments.length} available) --</option>
+                            {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                        </select>
+                        <button type="button" onClick={loadDepartments} style={{ marginLeft: "0.5rem" }} title="Refresh departments">↻</button>
+                    </div>
+                    <div><label>Birthday:</label><input name="birthday" type="date" /></div>
+                    <div><label>Additional Notes:</label><input name="additionalNotes" type="text" /></div>
+                    <button type="submit">Create Child</button>
+                </form>
+                <p className="small">Last created id: <strong>{lastId ?? "-"}</strong></p>
+
+                <h3>Update Child</h3>
+                <form onSubmit={handleUpdate}>
+                    <div><label>Child ID:</label><input name="id" type="number" required /></div>
+                    <div><label>Name:</label><input name="name" /></div>
+                    <div><label>Email:</label><input name="email" type="email" /></div>
+                    <div><label>Phone:</label><input name="phoneNumber" type="number" /></div>
+                    <div><label>Address:</label><input name="address" /></div>
+                    <div>
+                        <label>Department:</label>
+                        <select name="departmentId">
+                            <option value="">-- Keep Current --</option>
+                            {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                        </select>
+                        <button type="button" onClick={loadDepartments} style={{ marginLeft: "0.5rem" }} title="Refresh departments">↻</button>
+                    </div>
+                    <div><label>Birthday:</label><input name="birthday" type="date" /></div>
+                    <div><label>Additional Notes:</label><input name="additionalNotes" type="text" /></div>
+                    <button type="submit">Update Child</button>
+                </form>
+
+                <h3>Upload Profile Picture</h3>
+                <form onSubmit={handleUpload} encType="multipart/form-data">
+                    <div><label>Child ID:</label><input name="id" type="number" required /></div>
+                    <div><label>File:</label><input name="file" type="file" accept="image/*" required /></div>
+                    <button type="submit">Upload</button>
+                </form>
+                {photoUrl && <img className="preview" src={photoUrl} alt="Child" />}
+
+                <h3>List / Get / Delete</h3>
+                <div className="row"><button onClick={handleList}>GET /api/children</button></div>
+                <div className="row">
+                    <form onSubmit={handleGet} style={{ display: "inline-block", marginRight: "1rem" }}>
+                        <label>ID:</label><input name="id" type="number" required style={{ width: "80px" }} />
+                        <button type="submit">GET</button>
+                    </form>
+                    <form onSubmit={handleDelete} style={{ display: "inline-block" }}>
+                        <label>ID:</label><input name="id" type="number" required style={{ width: "80px" }} />
+                        <button type="submit">DELETE</button>
+                    </form>
+                </div>
+                <pre>{output}</pre>
+            </section>
+        );
+    }
+
+    // ---------- Child Status Section (check-service) ----------
+    function ChildStatusSection() {
+        const [output, setOutput] = useState("");
+        const [children, setChildren] = useState([]);
+
+        useEffect(() => {
+            jsonFetch("/api/children").then(setChildren).catch(console.error);
+            window.addEventListener('childrenChanged', loadChildren);
+            return () => window.removeEventListener('childrenChanged', loadChildren);
+        }, []);
+
+        const loadChildren = () => {
+            jsonFetch("/api/children").then(setChildren).catch(console.error);
+        };
+
+        // Register check-in/check-out (HENTET/LEVERT)
+        const handleRegisterStatus = async (e) => {
+            e.preventDefault();
+            try {
+                const obj = getFormObj(e.target);
+                const payload = {
+                    childId: parseInt(obj.childId, 10),
+                    status: obj.status,
+                    employeeId: parseInt(obj.employeeId, 10)
+                };
+                const result = await jsonFetch("/api/child-status/checks", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                setOutput("Status registered:\n" + JSON.stringify(result, null, 2));
+            } catch (err) {
+                alert("Register status failed: " + err.message);
+            }
+        };
+
+        // Update event time for a status log
+        const handleUpdateEventTime = async (e) => {
+            e.preventDefault();
+            try {
+                const obj = getFormObj(e.target);
+                const payload = {
+                    eventTime: obj.eventTime
+                };
+                const result = await jsonFetch(`/api/child-status/logs/${obj.logId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                setOutput("Event time updated:\n" + JSON.stringify(result, null, 2));
+            } catch (err) {
+                alert("Update event time failed: " + err.message);
+            }
+        };
+
+        // Get status log by ID
+        const handleGetById = async (e) => {
+            e.preventDefault();
+            try {
+                const obj = getFormObj(e.target);
+                const res = await fetch(`/api/child-status/logs/${obj.logId}`);
+                if (res.status === 404) {
+                    setOutput("Status log not found.");
+                    return;
+                }
+                if (!res.ok) throw new Error(await res.text());
+                const result = await res.json();
+                setOutput("Status log:\n" + JSON.stringify(result, null, 2));
+            } catch (err) {
+                alert("Get status log failed: " + err.message);
+            }
+        };
+
+        // Register sickness (SYK)
+        const handleRegisterSyk = async (e) => {
+            e.preventDefault();
+            try {
+                const obj = getFormObj(e.target);
+                const payload = {
+                    childId: parseInt(obj.childId, 10),
+                    sicknessTime: obj.sicknessTime,
+                    symptoms: obj.symptoms,
+                    employeeId: parseInt(obj.employeeId, 10)
+                };
+                const result = await jsonFetch("/api/child-status/syk", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                setOutput("Syk registered:\n" + JSON.stringify(result, null, 2));
+            } catch (err) {
+                alert("Register syk failed: " + err.message);
+            }
+        };
+
+        // Register absence (FRAVAER)
+        const handleRegisterFravaer = async (e) => {
+            e.preventDefault();
+            try {
+                const obj = getFormObj(e.target);
+                const payload = {
+                    childId: parseInt(obj.childId, 10),
+                    absenceReasons: obj.absenceReasons,
+                    employeeId: parseInt(obj.employeeId, 10)
+                };
+                const result = await jsonFetch("/api/child-status/fravaer", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                setOutput("Fravær registered:\n" + JSON.stringify(result, null, 2));
+            } catch (err) {
+                alert("Register fravær failed: " + err.message);
+            }
+        };
+
+        // Get latest status for a child
+        const handleGetLatest = async (e) => {
+            e.preventDefault();
+            try {
+                const obj = getFormObj(e.target);
+                const res = await fetch(`/api/child-status/children/${obj.childId}/latest`);
+                if (res.status === 204) {
+                    setOutput("Ingen status registrert ennå for dette barnet.");
+                    return;
+                }
+                if (!res.ok) throw new Error(await res.text());
+                const result = await res.json();
+
+                // Format the output nicely
+                const formatTime = (isoString) => {
+                    if (!isoString) return "N/A";
+                    const date = new Date(isoString);
+                    return date.toLocaleString('no-NO', {
+                        dateStyle: 'medium',
+                        timeStyle: 'short'
+                    });
+                };
+
+                let statusDisplay = `📋 Latest Status for Child ID: ${result.childId}\n`;
+                statusDisplay += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                statusDisplay += `Log ID: ${result.id}\n`;
+                statusDisplay += `Status: ${result.status}\n`;
+                statusDisplay += `Time: ${formatTime(result.registertedAt)}\n`;
+
+                if (result.symptoms) {
+                    statusDisplay += `Symptoms: ${result.symptoms}\n`;
+                }
+                if (result.absenceReasons) {
+                    statusDisplay += `Absence Reason: ${result.absenceReasons}\n`;
+                }
+
+                statusDisplay += `\n📄 Raw JSON:\n${JSON.stringify(result, null, 2)}`;
+                setOutput(statusDisplay);
+            } catch (err) {
+                alert("Get latest status failed: " + err.message);
+            }
+        };
+
+        // Get full status history for a child
+        const handleGetHistory = async (e) => {
+            e.preventDefault();
+            try {
+                const obj = getFormObj(e.target);
+                const res = await fetch(`/api/child-status/children/${obj.childId}/history`);
+                if (!res.ok) throw new Error(await res.text());
+                const logs = await res.json();
+
+                if (logs.length === 0) {
+                    setOutput("Ingen status registrert ennå for dette barnet.");
+                    return;
+                }
+
+                const formatTime = (isoString) => {
+                    if (!isoString) return "N/A";
+                    const date = new Date(isoString);
+                    return date.toLocaleString('no-NO', {
+                        dateStyle: 'medium',
+                        timeStyle: 'short'
+                    });
+                };
+
+                let historyDisplay = `📜 Status History for Child ID: ${obj.childId} (${logs.length} entries)\n`;
+                historyDisplay += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+                logs.forEach((log, index) => {
+                    historyDisplay += `${index + 1}. [Log ID: ${log.id}] ${log.status}\n`;
+                    historyDisplay += `   Time: ${formatTime(log.eventTime)}\n`;
+                    if (log.symptoms) {
+                        historyDisplay += `   Symptoms: ${log.symptoms}\n`;
+                    }
+                    if (log.absenceReason) {
+                        historyDisplay += `   Absence Reason: ${log.absenceReason}\n`;
+                    }
+                    historyDisplay += `   Registered by Employee ID: ${log.registeredByEmployeeId}\n\n`;
+                });
+
+                historyDisplay += `\n📄 Raw JSON:\n${JSON.stringify(logs, null, 2)}`;
+                setOutput(historyDisplay);
+            } catch (err) {
+                alert("Get history failed: " + err.message);
+            }
+        };
+
+        // Helper to get current datetime in ISO format for input default
+        const getCurrentDateTime = () => {
+            const now = new Date();
+            return now.toISOString().slice(0, 16);
+        };
+
+        return (
+            <section>
+                <h2>Child Status (check-service)</h2>
+                <p className="small">Register check-in/out, sickness, and absence for children.</p>
+
+                <h3>Register Status (HENTET/LEVERT)</h3>
+                <form onSubmit={handleRegisterStatus}>
+                    <div>
+                        <label>Child:</label>
+                        <select name="childId" required>
+                            <option value="">-- Select Child --</option>
+                            {children.map(c => <option key={c.id} value={c.id}>{c.name} (ID: {c.id})</option>)}
+                        </select>
+                        <button type="button" onClick={loadChildren} style={{ marginLeft: "0.5rem" }} title="Refresh children">↻</button>
+                    </div>
+                    <div>
+                        <label>Status:</label>
+                        <select name="status" required>
+                            <option value="LEVERT">LEVERT (Dropped off)</option>
+                            <option value="HENTET">HENTET (Picked up)</option>
+                        </select>
+                    </div>
+                    <div><label>Employee ID:</label><input name="employeeId" type="number" required /></div>
+                    <button type="submit">Register Status</button>
+                </form>
+
+                <h3>Update Event Time</h3>
+                <form onSubmit={handleUpdateEventTime}>
+                    <div><label>Log ID:</label><input name="logId" type="number" required placeholder="Status log ID" /></div>
+                    <div><label>New Event Time:</label><input name="eventTime" type="datetime-local" required /></div>
+                    <button type="submit">Update Time</button>
+                </form>
+                <form onSubmit={handleGetById} style={{ marginTop: "0.5rem" }}>
+                    <div style={{ display: "inline-flex", alignItems: "center" }}>
+                        <label>Log ID:</label><input name="logId" type="number" required style={{ width: "80px", marginRight: "0.5rem" }} />
+                        <button type="submit">Get Log by ID</button>
+                    </div>
+                </form>
+
+                <h3>Register Syk (Sickness)</h3>
+                <form onSubmit={handleRegisterSyk}>
+                    <div>
+                        <label>Child:</label>
+                        <select name="childId" required>
+                            <option value="">-- Select Child --</option>
+                            {children.map(c => <option key={c.id} value={c.id}>{c.name} (ID: {c.id})</option>)}
+                        </select>
+                    </div>
+                    <div><label>Sickness Time:</label><input name="sicknessTime" type="datetime-local" defaultValue={getCurrentDateTime()} required /></div>
+                    <div><label>Symptoms:</label><input name="symptoms" type="text" required placeholder="e.g., fever, cough" /></div>
+                    <div><label>Employee ID:</label><input name="employeeId" type="number" required /></div>
+                    <button type="submit">Register Syk</button>
+                </form>
+
+                <h3>Register Fravær (Absence)</h3>
+                <form onSubmit={handleRegisterFravaer}>
+                    <div>
+                        <label>Child:</label>
+                        <select name="childId" required>
+                            <option value="">-- Select Child --</option>
+                            {children.map(c => <option key={c.id} value={c.id}>{c.name} (ID: {c.id})</option>)}
+                        </select>
+                    </div>
+                    <div><label>Absence Reason:</label><input name="absenceReasons" type="text" required placeholder="e.g., family vacation, appointment" /></div>
+                    <div><label>Employee ID:</label><input name="employeeId" type="number" required /></div>
+                    <button type="submit">Register Fravær</button>
+                </form>
+
+                <h3>Get Latest Status</h3>
+                <form onSubmit={handleGetLatest}>
+                    <div>
+                        <label>Child:</label>
+                        <select name="childId" required>
+                            <option value="">-- Select Child --</option>
+                            {children.map(c => <option key={c.id} value={c.id}>{c.name} (ID: {c.id})</option>)}
+                        </select>
+                    </div>
+                    <button type="submit">Get Latest Status</button>
+                </form>
+
+                <h3>Get Status History (Log)</h3>
+                <form onSubmit={handleGetHistory}>
+                    <div>
+                        <label>Child:</label>
+                        <select name="childId" required>
+                            <option value="">-- Select Child --</option>
+                            {children.map(c => <option key={c.id} value={c.id}>{c.name} (ID: {c.id})</option>)}
+                        </select>
+                    </div>
+                    <button type="submit">Get Full History</button>
+                </form>
+
+                <pre>{output}</pre>
+            </section>
+        );
+    }
+
+    // ---------- Parent Section ----------
+    function ParentSection() {
+        const [output, setOutput] = useState("");
+        const [lastId, setLastId] = useState(null);
+        const [photoUrl, setPhotoUrl] = useState("");
+
+        const handleCreate = async (e) => {
+            e.preventDefault();
+            try {
+                const obj = getFormObj(e.target);
+                const payload = {
+                    name: obj.name,
+                    email: obj.email,
+                    phoneNumber: parseInt(obj.phoneNumber, 10),
+                    address: obj.address,
+                    childIds: parseIds(obj.childIds)
+                };
+                const parent = await jsonFetch("/api/parents", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                setLastId(parent.id);
+                setOutput("Created parent:\n" + JSON.stringify(parent, null, 2));
+            } catch (err) {
+                alert("Create parent failed: " + err.message);
+            }
+        };
+
+        const handleUpdate = async (e) => {
+            e.preventDefault();
+            try {
+                const obj = getFormObj(e.target);
+                const id = Number(obj.id);
+                const payload = {};
+                if (obj.name) payload.name = obj.name;
+                if (obj.email) payload.email = obj.email;
+                if (obj.phoneNumber) payload.phoneNumber = parseInt(obj.phoneNumber, 10);
+                if (obj.address) payload.address = obj.address;
+                if (obj.childIds) payload.childIds = parseIds(obj.childIds);
+
+                const updated = await jsonFetch(`/api/parents/${id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                setOutput("Updated parent:\n" + JSON.stringify(updated, null, 2));
+            } catch (err) {
+                alert("Update parent failed: " + err.message);
+            }
+        };
+
+        const handleUpload = async (e) => {
+            e.preventDefault();
+            try {
+                const formData = new FormData(e.target);
+                const id = formData.get("id");
+                const uploadFormData = new FormData();
+                uploadFormData.append("file", formData.get("file"));
+                const res = await fetch(`/api/parents/${id}/profile-picture`, {
+                    method: "POST",
+                    body: uploadFormData
+                });
+                if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+                const parent = await res.json();
+                setPhotoUrl(parent.profilePictureUrl);
+                setOutput("Uploaded:\n" + JSON.stringify(parent, null, 2));
+            } catch (err) {
+                alert("Upload failed: " + err.message);
+            }
+        };
+
+        const handleList = async () => {
+            try {
+                const data = await jsonFetch("/api/parents");
+                setOutput(JSON.stringify(data, null, 2));
+            } catch (err) {
+                alert("List parents failed: " + err.message);
+            }
+        };
+
+        const handleGet = async (e) => {
+            e.preventDefault();
+            const obj = getFormObj(e.target);
+            try {
+                const parent = await jsonFetch(`/api/parents/${obj.id}`);
+                setOutput(JSON.stringify(parent, null, 2));
+            } catch (err) {
+                alert("Get parent failed: " + err.message);
+            }
+        };
+
+        const handleDelete = async (e) => {
+            e.preventDefault();
+            const obj = getFormObj(e.target);
+            try {
+                const res = await fetch(`/api/parents/${obj.id}`, { method: "DELETE" });
+                if (!res.ok && res.status !== 204) throw new Error(await res.text());
+                setOutput(`Parent ${obj.id} deleted.`);
+            } catch (err) {
+                alert("Delete parent failed: " + err.message);
+            }
+        };
+
+        return (
+            <section>
+                <h2>Parents</h2>
+
+                <h3>Register Parent</h3>
+                <form onSubmit={handleCreate}>
+                    <div><label>Name:</label><input name="name" required /></div>
+                    <div><label>Email:</label><input name="email" type="email" required /></div>
+                    <div><label>Phone:</label><input name="phoneNumber" type="number" required /></div>
+                    <div><label>Address:</label><input name="address" required /></div>
+                    <div><label>Child IDs (comma-sep):</label><input name="childIds" /></div>
+                    <button type="submit">Create Parent</button>
+                </form>
+                <p className="small">Last created id: <strong>{lastId ?? "-"}</strong></p>
+
+                <h3>Update Parent</h3>
+                <form onSubmit={handleUpdate}>
+                    <div><label>Parent ID:</label><input name="id" type="number" required /></div>
+                    <div><label>Name:</label><input name="name" /></div>
+                    <div><label>Email:</label><input name="email" type="email" /></div>
+                    <div><label>Phone:</label><input name="phoneNumber" type="number" /></div>
+                    <div><label>Address:</label><input name="address" /></div>
+                    <div><label>Child IDs (comma-sep):</label><input name="childIds" /></div>
+                    <button type="submit">Update Parent</button>
+                </form>
+
+                <h3>Upload Profile Picture</h3>
+                <form onSubmit={handleUpload} encType="multipart/form-data">
+                    <div><label>Parent ID:</label><input name="id" type="number" required /></div>
+                    <div><label>File:</label><input name="file" type="file" accept="image/*" required /></div>
+                    <button type="submit">Upload</button>
+                </form>
+                {photoUrl && <img className="preview" src={photoUrl} alt="Parent" />}
+
+                <h3>List / Get / Delete</h3>
+                <div className="row"><button onClick={handleList}>GET /api/parents</button></div>
+                <div className="row">
+                    <form onSubmit={handleGet} style={{ display: "inline-block", marginRight: "1rem" }}>
+                        <label>ID:</label><input name="id" type="number" required style={{ width: "80px" }} />
+                        <button type="submit">GET</button>
+                    </form>
+                    <form onSubmit={handleDelete} style={{ display: "inline-block" }}>
+                        <label>ID:</label><input name="id" type="number" required style={{ width: "80px" }} />
+                        <button type="submit">DELETE</button>
+                    </form>
+                </div>
+                <pre>{output}</pre>
+            </section>
+        );
+    }
+
+    // ---------- Employee Section ----------
+    function EmployeeSection() {
+        const [output, setOutput] = useState("");
+        const [lastId, setLastId] = useState(null);
+        const [photoUrl, setPhotoUrl] = useState("");
+        const [departments, setDepartments] = useState([]);
+
+        useEffect(() => {
+            jsonFetch("/api/departments").then(setDepartments).catch(console.error);
+        }, []);
+
+        const handleCreate = async (e) => {
+            e.preventDefault();
+            try {
+                const obj = getFormObj(e.target);
+                const payload = {
+                    name: obj.name,
+                    email: obj.email,
+                    password: obj.password,
+                    phoneNumber: parseInt(obj.phoneNumber, 10),
+                    address: obj.address,
+                    departmentIds: parseIds(obj.departmentIds)
+                };
+                const emp = await jsonFetch("/api/employees", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                setLastId(emp.id);
+                setOutput("Created employee:\n" + JSON.stringify(emp, null, 2));
+            } catch (err) {
+                alert("Create employee failed: " + err.message);
+            }
+        };
+
+        const handleUpdate = async (e) => {
+            e.preventDefault();
+            try {
+                const obj = getFormObj(e.target);
+                const id = Number(obj.id);
+                const payload = {};
+                if (obj.name) payload.name = obj.name;
+                if (obj.email) payload.email = obj.email;
+                if (obj.phoneNumber) payload.phoneNumber = parseInt(obj.phoneNumber, 10);
+                if (obj.address) payload.address = obj.address;
+                if (obj.departmentIds) payload.departmentIds = parseIds(obj.departmentIds);
+
+                const updated = await jsonFetch(`/api/employees/${id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                setOutput("Updated employee:\n" + JSON.stringify(updated, null, 2));
+            } catch (err) {
+                alert("Update employee failed: " + err.message);
+            }
+        };
+
+        const handleUpload = async (e) => {
+            e.preventDefault();
+            try {
+                const formData = new FormData(e.target);
+                const id = formData.get("id");
+                const uploadFormData = new FormData();
+                uploadFormData.append("file", formData.get("file"));
+                const res = await fetch(`/api/employees/${id}/profile-picture`, {
+                    method: "POST",
+                    body: uploadFormData
+                });
+                if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+                const emp = await res.json();
+                setPhotoUrl(emp.profilePictureUrl);
+                setOutput("Uploaded:\n" + JSON.stringify(emp, null, 2));
+            } catch (err) {
+                alert("Upload failed: " + err.message);
+            }
+        };
+
+        const handleChangePassword = async (e) => {
+            e.preventDefault();
+            try {
+                const obj = getFormObj(e.target);
+                const result = await jsonFetch(`/api/employees/${obj.id}/password`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ oldPassword: obj.oldPassword, newPassword: obj.newPassword })
+                });
+                setOutput("Password changed: " + JSON.stringify(result, null, 2));
+            } catch (err) {
+                alert("Change password failed: " + err.message);
+            }
+        };
+
+        const handleList = async () => {
+            try {
+                const data = await jsonFetch("/api/employees");
+                setOutput(JSON.stringify(data, null, 2));
+            } catch (err) {
+                alert("List employees failed: " + err.message);
+            }
+        };
+
+        const handleGet = async (e) => {
+            e.preventDefault();
+            const obj = getFormObj(e.target);
+            try {
+                const emp = await jsonFetch(`/api/employees/${obj.id}`);
+                setOutput(JSON.stringify(emp, null, 2));
+            } catch (err) {
+                alert("Get employee failed: " + err.message);
+            }
+        };
+
+        const handleDelete = async (e) => {
+            e.preventDefault();
+            const obj = getFormObj(e.target);
+            try {
+                const res = await fetch(`/api/employees/${obj.id}`, { method: "DELETE" });
+                if (!res.ok && res.status !== 204) throw new Error(await res.text());
+                setOutput(`Employee ${obj.id} deleted.`);
+            } catch (err) {
+                alert("Delete employee failed: " + err.message);
+            }
+        };
+
+        const handleGetChildrenByDept = async (e) => {
+            e.preventDefault();
+            const obj = getFormObj(e.target);
+            try {
+                const data = await jsonFetch(`/api/employees/departments/${obj.departmentId}/children`);
+                setOutput("Children in department:\n" + JSON.stringify(data, null, 2));
+            } catch (err) {
+                alert("Get children by dept failed: " + err.message);
+            }
+        };
+
+        return (
+            <section>
+                <h2>Employees (Password Auth)</h2>
+
+                <h3>Register Employee</h3>
+                <form onSubmit={handleCreate}>
+                    <div><label>Name:</label><input name="name" required /></div>
+                    <div><label>Email:</label><input name="email" type="email" required /></div>
+                    <div><label>Password:</label><input name="password" type="password" required /></div>
+                    <div><label>Phone:</label><input name="phoneNumber" type="number" required /></div>
+                    <div><label>Address:</label><input name="address" required /></div>
+                    <div><label>Dept IDs (comma-sep):</label><input name="departmentIds" /></div>
+                    <button type="submit">Create Employee</button>
+                </form>
+                <p className="small">Last created id: <strong>{lastId ?? "-"}</strong></p>
+
+                <h3>Update Employee</h3>
+                <form onSubmit={handleUpdate}>
+                    <div><label>Employee ID:</label><input name="id" type="number" required /></div>
+                    <div><label>Name:</label><input name="name" /></div>
+                    <div><label>Email:</label><input name="email" type="email" /></div>
+                    <div><label>Phone:</label><input name="phoneNumber" type="number" /></div>
+                    <div><label>Address:</label><input name="address" /></div>
+                    <div><label>Dept IDs (comma-sep):</label><input name="departmentIds" /></div>
+                    <button type="submit">Update Employee</button>
+                </form>
+
+                <h3>Change Password</h3>
+                <form onSubmit={handleChangePassword}>
+                    <div><label>Employee ID:</label><input name="id" type="number" required /></div>
+                    <div><label>Old Password:</label><input name="oldPassword" type="password" required /></div>
+                    <div><label>New Password:</label><input name="newPassword" type="password" required /></div>
+                    <button type="submit">Change Password</button>
+                </form>
+
+                <h3>Upload Profile Picture</h3>
+                <form onSubmit={handleUpload} encType="multipart/form-data">
+                    <div><label>Employee ID:</label><input name="id" type="number" required /></div>
+                    <div><label>File:</label><input name="file" type="file" accept="image/*" required /></div>
+                    <button type="submit">Upload</button>
+                </form>
+                {photoUrl && <img className="preview" src={photoUrl} alt="Employee" />}
+
+                <h3>Get Children by Department</h3>
+                <form onSubmit={handleGetChildrenByDept}>
+                    <div>
+                        <label>Department:</label>
+                        <select name="departmentId" required>
+                            <option value="">-- Select --</option>
+                            {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                        </select>
+                    </div>
+                    <button type="submit">Get Children</button>
+                </form>
+
+                <h3>List / Get / Delete</h3>
+                <div className="row"><button onClick={handleList}>GET /api/employees</button></div>
+                <div className="row">
+                    <form onSubmit={handleGet} style={{ display: "inline-block", marginRight: "1rem" }}>
+                        <label>ID:</label><input name="id" type="number" required style={{ width: "80px" }} />
+                        <button type="submit">GET</button>
+                    </form>
+                    <form onSubmit={handleDelete} style={{ display: "inline-block" }}>
+                        <label>ID:</label><input name="id" type="number" required style={{ width: "80px" }} />
+                        <button type="submit">DELETE</button>
+                    </form>
+                </div>
+                <pre>{output}</pre>
+            </section>
+        );
+    }
+
+    function App() {
+        return (
+            <div className="container">
+                <h1>User-Service React Test</h1>
+                <InfoSection />
+                <PasskeySection />
+                <DepartmentSection />
+                <EmployeeSection />
+                <ChildrenSection />
+                <ChildStatusSection />
+                <ParentSection />
+            </div>
+        );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+</script>
+</body>
+</html>
