@@ -1,6 +1,3 @@
--- V3__test_data.sql
--- Test data for Frostbyte application
-
 -- Departments
 INSERT INTO departments (name) VALUES
     ('Sommerfulg'),
@@ -9,6 +6,7 @@ INSERT INTO departments (name) VALUES
     ('Byen');
 
 -- Employees (passwords are BCrypt hash of 'password123')
+-- The password does not work in the real website/testside since its not been salted(just hashed)
 INSERT INTO employees (name, email, password, phone_number, address, profile_picture_url) VALUES
     ('Anna Jensen', 'anna.jensen@frostbyte.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjqQBrkAb/T.0BZXa3l0VftFhNqzYu', 12345678, '123 Main Street', NULL),
     ('Erik Larsen', 'erik.larsen@frostbyte.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjqQBrkAb/T.0BZXa3l0VftFhNqzYu', 87654321, '456 Oak Avenue', NULL),
