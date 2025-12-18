@@ -79,33 +79,36 @@ ALTER TABLE parent_children
     ADD CONSTRAINT fk_parchi_on_children
         FOREIGN KEY (child_id) REFERENCES children (id) ON DELETE CASCADE;
 
--- WebAuthn: User credentials table
-CREATE TABLE spring_security_webauthn_user_credentials (
-    id VARCHAR(255) PRIMARY KEY,
-    user_entity_id BYTEA NOT NULL,
-    credential_id BYTEA NOT NULL UNIQUE,
-    public_key BYTEA NOT NULL,
-    sign_count BIGINT NOT NULL,
-    transports VARCHAR(255),
-    label VARCHAR(255),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_used_at TIMESTAMP
-);
+-- 1) WebAuthn user entities
+-- Used by JdbcPublicKeyCredentialUserEntityRepository
+CREATE TABLE IF NOT EXISTS user_entities (
+    id            VARCHAR(255) PRIMARY KEY,
+    name          VARCHAR(255) NOT NULL UNIQUE,
+    display_name  VARCHAR(255) NOT NULL
+    );
 
-CREATE INDEX idx_webauthn_user_entity_id
-    ON spring_security_webauthn_user_credentials(user_entity_id);
+-- 2) WebAuthn credentials
+-- Used by JdbcUserCredentialRepository
+CREATE TABLE IF NOT EXISTS user_credentials (
+    id                           BIGSERIAL PRIMARY KEY,
+    user_entity_user_id          VARCHAR(255) NOT NULL,
+    credential_id                VARCHAR(1024) NOT NULL UNIQUE,
+    public_key                   TEXT         NOT NULL,
+    signature_count              BIGINT       NOT NULL,
+    public_key_credential_type   VARCHAR(32)  NOT NULL,
+    created                      TIMESTAMP    NOT NULL,
+    last_used                    TIMESTAMP,
+    label                        VARCHAR(512),
+    backup_eligible              BOOLEAN      NOT NULL DEFAULT FALSE,
+    backup_state                 BOOLEAN      NOT NULL DEFAULT FALSE,
+    uv_initialized               BOOLEAN      NOT NULL DEFAULT FALSE,
+    authenticator_transports     VARCHAR(512),
+    attestation_object           BYTEA,
+    attestation_client_data_json BYTEA,
+    CONSTRAINT fk_user_credentials_user_entities
+    FOREIGN KEY (user_entity_user_id)
+    REFERENCES user_entities(id)
+    );
 
-CREATE INDEX idx_webauthn_credential_id
-    ON spring_security_webauthn_user_credentials(credential_id);
-
--- WebAuthn: Challenge tokens table
-CREATE TABLE spring_security_webauthn_challenges (
-    challenge_id VARCHAR(255) PRIMARY KEY,
-    challenge_value BYTEA NOT NULL,
-    username VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP NOT NULL
-);
-
-CREATE INDEX idx_webauthn_challenge_username
-    ON spring_security_webauthn_challenges(username);
+CREATE INDEX IF NOT EXISTS idx_user_credentials_user_id
+    ON user_credentials(user_entity_user_id);
