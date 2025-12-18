@@ -14,8 +14,11 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
-        ddl-auto: create-drop
+    hibernate:
+      ddl-auto: create-drop
 
+  flyway:
+    enabled: false   # <-- ADD THIS LINE
 
   docker:
     compose:
@@ -27,7 +30,6 @@ spring:
 
 server:
   port: 8001
-
 
 app:
   webauthn:
