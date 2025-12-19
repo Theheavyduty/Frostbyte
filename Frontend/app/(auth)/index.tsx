@@ -27,7 +27,7 @@ export default function Index() {
             formData.append("password", password);
 
 
-            const res = await fetch("http://localhost:8000/login", {
+            const res = await fetch("http://localhost:8080/login", {
                 method: "POST",
                 headers: {"Content-Type": "application/x-www-form-urlencoded"},
                 body: formData.toString(),
