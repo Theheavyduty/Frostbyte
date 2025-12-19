@@ -69,7 +69,6 @@ public class EmployeeController {
         return ResponseEntity.ok().body(java.util.Map.of("status", "ok"));
     }
 
-    // === CHILDREN BY DEPARTMENT =============================================
 
     @GetMapping("/departments/{departmentId}/children")
     public List<ChildrenResponse> getChildrenByDepartment(@PathVariable Long departmentId) {

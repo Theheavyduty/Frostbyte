@@ -36,7 +36,6 @@ public class ParentProfileService {
         this.fileStorageService = fileStorageService;
     }
 
-    // === RESPONSE CONVERSION ================================================
 
     private ParentResponse toResponse(ParentProfile parent) {
         List<ParentChildRelationship> relationships = relationshipRepository.findByParentId(parent.getId());
@@ -73,7 +72,6 @@ public class ParentProfileService {
         );
     }
 
-    // === BASIC CRUD =========================================================
 
     public List<ParentResponse> getAllWithChildren() {
         return parentProfileRepository.findAll().stream()
@@ -141,13 +139,11 @@ public class ParentProfileService {
             parent.setAddress(req.address());
         }
 
-        // Update children relationships if provided
         if (req.childIds() != null) {
             // Remove existing relationships
             List<ParentChildRelationship> existingRelationships = relationshipRepository.findByParentId(id);
             relationshipRepository.deleteAll(existingRelationships);
 
-            // Create new relationships
             if (!req.childIds().isEmpty()) {
                 List<Children> children = childrenRepository.findAllById(req.childIds());
                 for (Children child : children) {
@@ -173,25 +169,20 @@ public class ParentProfileService {
     public void delete(Long id) {
         ParentProfile parent = getById(id);
 
-        // Delete parent's profile picture
         fileStorageService.deleteProfilePicture(parent.getProfilePictureUrl());
 
-        // Delete all relationships (cascades from ParentProfile, but explicit for clarity)
         List<ParentChildRelationship> relationships = relationshipRepository.findByParentId(id);
         relationshipRepository.deleteAll(relationships);
 
         parentProfileRepository.delete(parent);
     }
 
-    // === PROFILE PICTURE ====================================================
 
     public ParentProfile updateProfilePicture(Long id, MultipartFile file) throws IOException {
         ParentProfile parent = getById(id);
 
-        // Delete old picture if there is one
         fileStorageService.deleteProfilePicture(parent.getProfilePictureUrl());
 
-        // Store new picture under uploads/profile-pictures/parents/{id}/...
         String url = fileStorageService.storeParentProfilePicture(id, file);
         parent.setProfilePictureUrl(url);
 

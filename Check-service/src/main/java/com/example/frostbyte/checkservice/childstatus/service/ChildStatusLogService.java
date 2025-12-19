@@ -62,7 +62,6 @@ public class ChildStatusLogService {
         return Repo.save(log);
     }
 
-    // If status not exist return null -> Frontend show "ingen status registrert ennå"
     public ChildStatusLog getChildStatusLatest(Long childId) {
         return Repo.findFirstByChildIdOrderByEventTimeDesc(childId);
     }
