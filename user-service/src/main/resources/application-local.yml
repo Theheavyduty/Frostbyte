@@ -18,7 +18,7 @@ spring:
       ddl-auto: create-drop
 
   flyway:
-    enabled: false   # <-- ADD THIS LINE
+    enabled: false
 
   docker:
     compose:

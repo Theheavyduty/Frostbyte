@@ -13,7 +13,6 @@ import java.util.UUID;
 @Service
 public class FileStorageService {
 
-    // Base: uploads/profile-pictures
     private final Path rootLocation = Paths.get("uploads/profile-pictures");
 
     public FileStorageService() {

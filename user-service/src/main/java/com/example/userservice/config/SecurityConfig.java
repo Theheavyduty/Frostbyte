@@ -91,9 +91,21 @@ public class SecurityConfig {
                         )
                 )
 
-                // Form login for initial authentication
                 .formLogin(form -> form
-                        .defaultSuccessUrl("/test.html", true)
+                        .successHandler((request, response, authentication) -> {
+                            response.setStatus(HttpStatus.OK.value());
+                            response.setContentType("application/json");
+                            response.setCharacterEncoding("UTF-8");
+                            response.getWriter().write("{\"message\":\"Login successful\",\"username\":\"" + authentication.getName() + "\"}");
+                            response.getWriter().flush();
+                        })
+                        .failureHandler((request, response, exception) -> {
+                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                            response.setContentType("application/json");
+                            response.setCharacterEncoding("UTF-8");
+                            response.getWriter().write("{\"error\":\"Invalid credentials\"}");
+                            response.getWriter().flush();
+                        })
                         .permitAll()
                 )
 
