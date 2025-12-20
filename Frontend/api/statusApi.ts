@@ -1,7 +1,7 @@
 import {ChildData, ChildStatus, Status} from "@/types/child";
 import { getAllChildrenData } from "@/api/childApi";
 
-const API_BASE_STATUS_URL = 'http://localhost:9000/api/child-status';
+const API_BASE_STATUS_URL = 'http://localhost:8080/api/child-status';
 
 export async function getStatus(childId: number): Promise<ChildStatus | null> {
     try {

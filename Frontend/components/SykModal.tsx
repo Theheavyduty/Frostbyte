@@ -8,42 +8,44 @@ type SykModalProps = {
 }
 
 export default function SykModal({
-    isVisible,
-    setIsVisible,
-    onSubmit,
-    }: SykModalProps) {
+                                     isVisible,
+                                     setIsVisible,
+                                     onSubmit,
+                                 }: SykModalProps) {
     const [symptoms, setSymptoms] = useState("");
 
     return (
         <Modal transparent visible={isVisible} animationType={"fade"}>
             <TouchableWithoutFeedback onPress={() => setIsVisible(false)}>
                 <View style={styles.overlay}>
-                    <View style={styles.modalVisible}>
-                        <Text style={styles.title}>Sykdom</Text>
-                        <Text style={styles.infoText}>
-                            Ved sykdom er det viktig at vi logger tid og årsak ved eventuell smittsom sykdom,
-                            vennligst beskriv symptomene og legg inn tidspunkt for når de oppstod/når det ble
-                            meldt av forelder.
-                        </Text>
-                        <Text style={styles.subTitle}>Symptomer:</Text>
-                        <View style={styles.inputBoxContainer}>
-                            <TextInput
-                                value={symptoms}
-                                onChangeText={setSymptoms}
-                                style={styles.inputBox}
-                            />
+                    <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+                        <View style={styles.modalVisible}>
+                            <Text style={styles.title}>Sykdom</Text>
+                            <Text style={styles.infoText}>
+                                Ved sykdom er det viktig at vi logger tid og årsak ved eventuell smittsom sykdom,
+                                vennligst beskriv symptomene og legg inn tidspunkt for når de oppstod/når det ble
+                                meldt av forelder.
+                            </Text>
+                            <Text style={styles.subTitle}>Symptomer:</Text>
+                            <View style={styles.inputBoxContainer}>
+                                <TextInput
+                                    value={symptoms}
+                                    onChangeText={setSymptoms}
+                                    style={styles.inputBox}
+                                />
+                            </View>
+                            <Pressable
+                                style={styles.addButton}
+                                onPress={() => {
+                                    onSubmit(symptoms);
+                                    setSymptoms("");
+                                    setIsVisible(false);
+                                }}
+                            >
+                                <Text style={styles.addButtonText}>Lagre sykdom</Text>
+                            </Pressable>
                         </View>
-                        <Pressable
-                            style={styles.addButton}
-                            onPress={() => {
-                                onSubmit(symptoms);
-                                setSymptoms("");
-                                setIsVisible(false);
-                            }}
-                        >
-                            <Text style={styles.addButtonText}>Lagre sykdom</Text>
-                        </Pressable>
-                    </View>
+                    </TouchableWithoutFeedback>
                 </View>
             </TouchableWithoutFeedback>
         </Modal>
