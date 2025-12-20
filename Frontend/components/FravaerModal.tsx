@@ -8,10 +8,10 @@ type FravaerModalProps = {
 }
 
 export default function FravaerModal({
-                                         isVisible,
-                                         setIsVisible,
-                                         onSubmit,
-                                     }: FravaerModalProps) {
+    isVisible,
+    setIsVisible,
+    onSubmit,
+    }: FravaerModalProps) {
     const [reason, setReason] = useState("");
 
     return (

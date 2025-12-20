@@ -6,3 +6,9 @@ Frostbyte is a Spring Boot–based case project structured as a small microservi
 - **Check-service** – planned service for recording or evaluating user checks.
 
 The repo is set up for local development with Maven and Docker Compose (see `Instructions.md` for details). Each service lives in its own module directory and can be started individually with the provided Maven profile.
+
+# How to login into the applicaiton
+
+Username: user
+
+Password: password

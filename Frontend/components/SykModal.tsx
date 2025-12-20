@@ -8,10 +8,10 @@ type SykModalProps = {
 }
 
 export default function SykModal({
-                                     isVisible,
-                                     setIsVisible,
-                                     onSubmit,
-                                 }: SykModalProps) {
+    isVisible,
+    setIsVisible,
+    onSubmit,
+    }: SykModalProps) {
     const [symptoms, setSymptoms] = useState("");
 
     return (
