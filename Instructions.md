@@ -47,3 +47,10 @@ Go to this link: https://maven.apache.org/install.html
 
 ## Todo list frontend
 - [ ] test
+
+
+# How to login into the applicaiton
+
+Username: user
+
+Password: password
