@@ -8,41 +8,43 @@ type FravaerModalProps = {
 }
 
 export default function FravaerModal({
-    isVisible,
-    setIsVisible,
-    onSubmit,
-}: FravaerModalProps) {
+                                         isVisible,
+                                         setIsVisible,
+                                         onSubmit,
+                                     }: FravaerModalProps) {
     const [reason, setReason] = useState("");
 
     return (
         <Modal transparent visible={isVisible} animationType={"fade"}>
             <TouchableWithoutFeedback onPress={() => setIsVisible(false)}>
                 <View style={styles.overlay}>
-                    <View style={styles.modalVisible}>
-                        <Text style={styles.title}>Fravær</Text>
-                        <Text style={styles.infoText}>
-                            Beskriv årsaken til fravær og legg inn en beskjed hvis nødvendig,
-                            dette er så avdelingsleder kan følge opp saken senere.
-                        </Text>
-                        <Text style={styles.subTitle}>Årsak for fravær:</Text>
-                        <View style={styles.inputBoxContainer}>
-                            <TextInput
-                                value={reason}
-                                onChangeText={setReason}
-                                style={styles.inputBox}
-                            />
+                    <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+                        <View style={styles.modalVisible}>
+                            <Text style={styles.title}>Fravær</Text>
+                            <Text style={styles.infoText}>
+                                Beskriv årsaken til fravær og legg inn en beskjed hvis nødvendig,
+                                dette er så avdelingsleder kan følge opp saken senere.
+                            </Text>
+                            <Text style={styles.subTitle}>Årsak for fravær:</Text>
+                            <View style={styles.inputBoxContainer}>
+                                <TextInput
+                                    value={reason}
+                                    onChangeText={setReason}
+                                    style={styles.inputBox}
+                                />
+                            </View>
+                            <Pressable
+                                style={styles.addButton}
+                                onPress={() => {
+                                    onSubmit(reason);
+                                    setReason("");
+                                    setIsVisible(false);
+                                }}
+                            >
+                                <Text style={styles.addButtonText}>Lagre fravær</Text>
+                            </Pressable>
                         </View>
-                        <Pressable
-                            style={styles.addButton}
-                            onPress={() => {
-                                onSubmit(reason);
-                                setReason("");
-                                setIsVisible(false);
-                            }}
-                        >
-                            <Text style={styles.addButtonText}>Lagre fravær</Text>
-                        </Pressable>
-                    </View>
+                    </TouchableWithoutFeedback>
                 </View>
             </TouchableWithoutFeedback>
         </Modal>
